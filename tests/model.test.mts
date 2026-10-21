@@ -12,6 +12,9 @@ test("columns follow runtime state first, then labels, then parent check", () =>
   assert.equal(columnOf(sub("a", { status: "running", pendingPermissions: [{}] }), chat), "need");
   assert.equal(columnOf(sub("a", { status: "error" }), chat), "need");
   assert.equal(columnOf(sub("a", { labels: { kanban: "done" } }), chat), "done");
+  assert.equal(columnOf(sub("a", { labels: { kanban: "ask" } }), chat), "need");
+  assert.equal(columnOf(sub("a", { status: "running", labels: { kanban: "ask" } }), chat), "run");
+  assert.equal(cardsOf([chat, sub("a", { labels: { kanban: "ask" } })])[0].asks, true);
   assert.equal(columnOf(sub("a", { labels: { kanban: "queue" } }), chat), "q");
   assert.equal(columnOf(sub("a", { labels: { kanban: "review" } }), { ...chat, status: "running" }), "acc");
   assert.equal(columnOf(sub("a"), { ...chat, status: "running" }), "run");

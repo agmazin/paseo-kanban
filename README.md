@@ -18,12 +18,15 @@
 и рядом с родными панелями они читались грязно-красными. "Канбан" сам добавляется в правую панель рядом с
 "Файлами" и "Изменениями" при её открытии (выбранной остаётся прежняя вкладка); все пять статусов видны и без карточек.
 
+0.1.3 (21.10.2026): метка `kanban=ask` - исполнитель задал Александру вопрос и ждёт: карточка в "Нужен ответ"
+с пастельно-красным тегом "Вопрос к тебе". Ответ в диалоге карточки начинает новый ход и снимает метку.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.2 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.1.3 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

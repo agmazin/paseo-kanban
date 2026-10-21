@@ -45,6 +45,8 @@ export function palette(theme: Theme) {
     menuHover: blend(c.foreground, menu, 0.05),
     button: c.surface2,
     selected: c.foreground,
+    askBg: dark ? "rgba(247,121,109,0.16)" : "rgba(241,46,47,0.10)",
+    askFg: dark ? "#f4a59c" : "#c2412f",
     dots: {
       q: blend(c.foregroundMuted, bg, 0.45),
       run: dark ? "#5caaf6" : "#268ae0",
@@ -197,6 +199,16 @@ export function CardView({
       <T color={faded ? p.fg3 : p.fg} size={13.5} lines={4}>
         {card.title}
       </T>
+      {card.asks ? (
+        <View
+          testID="kanban-ask-tag"
+          style={{ alignSelf: "flex-start", marginTop: 6, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: p.askBg }}
+        >
+          <T color={p.askFg} size={11.5} weight="500">
+            Вопрос к тебе
+          </T>
+        </View>
+      ) : null}
       {details ? (
         <T color={p.fg2} size={12} lines={4} style={{ marginTop: 5 }}>
           {details}
