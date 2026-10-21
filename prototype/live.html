@@ -228,8 +228,12 @@ html,body{margin:0;background:var(--page);color:var(--fg);font:14px/1.35 -apple-
 .board2 .bh2{padding-right:22px}
 .cols2{display:flex!important;gap:16px!important;flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;padding-right:22px;align-items:stretch!important}
 .col2{flex:0 0 282px;width:282px;overflow-y:auto;min-height:0;padding:0 4px 16px 0}
-.cols2::-webkit-scrollbar,.col2::-webkit-scrollbar{height:8px;width:6px}.cols2::-webkit-scrollbar-thumb,.col2::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
 .ch2.sticky{position:sticky;top:0;background:var(--win);z-index:2}
+.cols2{scrollbar-width:thin;scrollbar-color:transparent transparent}
+#live:hover .cols2{scrollbar-color:#454545 transparent}
+.col2{scrollbar-width:thin;scrollbar-color:transparent transparent}
+.col2:hover{scrollbar-color:#454545 transparent}
+
 .pills{display:flex;gap:8px;margin:0 40px 8px;flex-wrap:wrap}
 .pill3{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:999px;border:1px solid #333;background:#202020;font-size:13px;color:var(--fg2);white-space:nowrap}
 .pill3.ok{color:#fff;background:#2e6b4a;border-color:#3a8a5e;cursor:pointer}.pill3.back{cursor:pointer;color:var(--fg)}
