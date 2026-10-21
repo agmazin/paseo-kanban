@@ -21,12 +21,14 @@
 0.1.3 (21.10.2026): метка `kanban=ask` - исполнитель задал Александру вопрос и ждёт: карточка в "Нужен ответ"
 с пастельно-красным тегом "Вопрос к тебе". Ответ в диалоге карточки начинает новый ход и снимает метку.
 
+0.1.4: имена моделей Codex как в Paseo ("GPT-6.1-Sol"). Правила работы через Канбан - `/Users/agmazin/Yandex.Disk.localized/public/references/paseo-kanban.md`.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.3 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.1.4 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

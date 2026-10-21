@@ -31,6 +31,7 @@ test("only subagents become cards, parent label is a fallback", () => {
 test("model names", () => {
   assert.equal(modelName("claude", "claude-opus-5-5"), "Opus 5.5");
   assert.equal(modelName("codex", "gpt-5.5"), "GPT-5.5");
+  assert.equal(modelName("codex", "gpt-6.1-sol"), "GPT-6.1-Sol");
   assert.equal(modelName("codex", null), "Codex");
 });
 

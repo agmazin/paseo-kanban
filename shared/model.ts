@@ -67,7 +67,7 @@ export function modelName(provider: string, model?: string | null) {
   const claude = /^claude-(opus|sonnet|haiku|fable)-(\d+)-(\d+)/.exec(m);
   if (claude) return `${claude[1][0].toUpperCase()}${claude[1].slice(1)} ${claude[2]}.${claude[3]}`;
   const gpt = /^gpt-(.+)$/i.exec(m);
-  if (gpt) return `GPT-${gpt[1]}`;
+  if (gpt) return `GPT-${gpt[1].split("-").map((w, i) => (i ? w[0].toUpperCase() + w.slice(1) : w)).join("-")}`;
   if (m) return m;
   return p === "codex" ? "Codex" : p === "claude" ? "Claude" : p;
 }
