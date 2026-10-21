@@ -19,7 +19,7 @@ import {
   type Prefs,
 } from "../shared/model";
 import { useCards, usePrefs } from "./data";
-import { CardView, Chevron, Dot, GroupHeader, MenuBox, MenuItem, T, ToolButton, palette, type Palette, type Theme } from "./ui";
+import { CardView, Dot, GroupHeader, MenuBox, MenuItem, T, ToolButton, palette, type Palette, type Theme } from "./ui";
 import { fadeStyle, installScrollbarStyle, observeSelectedAgent } from "./web";
 
 type Open = (card: Card) => void;
@@ -204,11 +204,11 @@ type ViewProps = { workspaceId: string; theme: Theme; host: { id: string }; navi
 export function Board(props: PluginWorkspacePanelProps) {
   const ws = useWorkspace(props.workspaceId, (w) => ({ name: w.name, title: w.title }));
   useEffect(() => rememberWorkspace(props.workspaceId), [props.workspaceId]);
-  return <BoardView {...props} compact={props.layout.compact} title={ws?.title || ws?.name || "Канбан"} />;
+  return <BoardView {...props} title={ws?.title || ws?.name || "Канбан"} />;
 }
 
 // Left menu entry: the workspace board as a screen with workspace chips (reachable on phones too).
-export function BoardScreen({ theme, host, navigation, params, layout }: PluginScreenProps) {
+export function BoardScreen({ theme, host, navigation, params }: PluginScreenProps) {
   const p = palette(theme);
   const paseo = usePaseo();
   const list = useQuery({
@@ -221,8 +221,7 @@ export function BoardScreen({ theme, host, navigation, params, layout }: PluginS
   const workspaceId = workspaces.some((w) => w.id === picked) ? picked : (workspaces[0]?.id ?? null);
   return (
     <View style={{ flex: 1, backgroundColor: p.bg }}>
-      {/* No horizontal scrolling: on phones a sideways swipe opens Paseo's side panels. */}
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: layout.compact ? 14 : 22, paddingTop: 14 }}>
+      <ScrollView horizontal style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 22, paddingTop: 14 }}>
         {workspaces.map((w) => (
           <Pressable
             key={w.id}
@@ -236,7 +235,7 @@ export function BoardScreen({ theme, host, navigation, params, layout }: PluginS
             </T>
           </Pressable>
         ))}
-      </View>
+      </ScrollView>
       {workspaceId ? (
         <BoardView
           workspaceId={workspaceId}
@@ -244,14 +243,13 @@ export function BoardScreen({ theme, host, navigation, params, layout }: PluginS
           theme={theme}
           host={host}
           navigation={navigation}
-          compact={layout.compact}
         />
       ) : null}
     </View>
   );
 }
 
-function BoardView({ workspaceId, title, theme, host, navigation, compact }: ViewProps & { title: string; compact: boolean }) {
+function BoardView({ workspaceId, title, theme, host, navigation }: ViewProps & { title: string }) {
   const p = palette(theme);
   const { cards } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
@@ -261,8 +259,8 @@ function BoardView({ workspaceId, title, theme, host, navigation, compact }: Vie
   const cols = useMemo(() => columns(cards.filter((c) => c.workspaceId === workspaceId), prefs), [cards, prefs, workspaceId]);
   const open: Open = (c) => navigation?.openAgent({ agentId: c.id });
   return (
-    <View testID="kanban-board" style={{ flex: 1, backgroundColor: p.bg, paddingTop: 16, paddingLeft: compact ? 14 : 22 }}>
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10, paddingRight: compact ? 14 : 22 }}>
+    <View testID="kanban-board" style={{ flex: 1, backgroundColor: p.bg, paddingTop: 16, paddingLeft: 22 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10, paddingRight: 22 }}>
         <T color={p.fg} size={18} weight="600" style={{ flexShrink: 1 }}>
           {title}
         </T>
@@ -277,37 +275,6 @@ function BoardView({ workspaceId, title, theme, host, navigation, compact }: Vie
         />
         <ToolButton testID="kanban-view-button" icon="Ellipsis" label="Вид" active={menu === "view"} onPress={() => setMenu(menu === "view" ? null : "view")} p={p} />
       </View>
-      {compact ? (
-        // Phone: columns go one under another, the board scrolls only vertically
-        // (a sideways swipe would open Paseo's side panels).
-        <ScrollView testID="kanban-cols" style={{ flex: 1 }} contentContainerStyle={{ paddingRight: 14, paddingBottom: 24 }}>
-          {cols.map((col) => {
-            const key = `v|${col.key}`;
-            const isOpen = !prefs.toggled[key];
-            const count = col.archivedChats ? col.archivedChats.reduce((n, g) => n + g.cards.length, 0) : col.cards.length;
-            return (
-              <View key={col.key} testID={`kanban-col-${col.key}`}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${col.name}, ${count}`}
-                  onPress={() => toggle(key)}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 10, paddingBottom: 6, paddingHorizontal: 2 }}
-                >
-                  <Chevron open={isOpen} p={p} />
-                  {col.status ? <Dot col={col.status} p={p} /> : null}
-                  <T color={p.fg} size={14.5} weight="600" style={{ flexShrink: 1 }}>
-                    {col.name}
-                  </T>
-                  <T color={p.fg3} size={12.5}>
-                    {count}
-                  </T>
-                </Pressable>
-                {isOpen ? <ColumnBody col={col} prefs={prefs} toggle={toggle} open={open} hostId={host.id} p={p} /> : null}
-              </View>
-            );
-          })}
-        </ScrollView>
-      ) : (
           <ScrollView
             testID="kanban-cols"
             horizontal
@@ -336,7 +303,6 @@ function BoardView({ workspaceId, title, theme, host, navigation, compact }: Vie
               </View>
             ))}
           </ScrollView>
-      )}
       {menu ? (
         <Pressable
           accessibilityLabel="Закрыть меню"
