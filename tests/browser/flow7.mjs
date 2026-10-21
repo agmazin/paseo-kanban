@@ -1,0 +1,11 @@
+import { open, wsUrl } from './lib.mjs';
+const { b, p } = await open();
+await p.goto(wsUrl); await p.waitForTimeout(1500);
+await p.getByText('ЭкоЭксперт').nth(1).click(); await p.waitForTimeout(1500);
+await p.getByTestId('workspace-tab-agent_c00dbb33-83ee-419e-b82f-cf21d4e400ca').first().click(); await p.waitForTimeout(1500);
+await p.getByRole('button', { name: /Канбан чата|Ждёт приёмки|Готово|В работе/ }).count().then(n => console.log('pills', n));
+await p.keyboard.press('Meta+k'); await p.waitForTimeout(500); await p.keyboard.type('Канбан чата'); await p.waitForTimeout(500); await p.keyboard.press('Enter'); await p.waitForTimeout(2000);
+await p.screenshot({ path: '/tmp/kbt/19-cmdk-chat.png' });
+await p.getByTestId('workspace-tab-agent_2388dce3-a6e9-4073-828d-28e0c7ae1985').first().click(); await p.waitForTimeout(1500);
+await p.screenshot({ path: '/tmp/kbt/20-follow.png' });
+await b.close();

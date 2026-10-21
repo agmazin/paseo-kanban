@@ -1,0 +1,15 @@
+import { open, wsUrl } from './lib.mjs';
+const [S1] = process.argv.slice(2);
+const { b, p } = await open();
+await p.goto(wsUrl); await p.waitForTimeout(1500);
+await p.getByText('ЭкоЭксперт').nth(1).click(); await p.waitForTimeout(1500);
+await p.getByRole('button', { name: /канбан/i }).first().click(); await p.waitForTimeout(2000);
+await p.getByTestId('kanban-card-' + S1).click(); await p.waitForTimeout(2000);
+await p.getByRole('button', { name: /Вернуть в работу с замечаниями/ }).first().click(); await p.waitForTimeout(800);
+await p.screenshot({ path: '/tmp/kbt/13-return-popover.png' });
+await p.getByPlaceholder('Замечания').fill('Проверь ещё раз и ответь одним словом: исправлено');
+await p.getByRole('button', { name: 'Вернуть в работу', exact: true }).click(); await p.waitForTimeout(1200);
+await p.screenshot({ path: '/tmp/kbt/14-returned.png' });
+await p.waitForTimeout(15000);
+await p.screenshot({ path: '/tmp/kbt/15-after.png' });
+await b.close();

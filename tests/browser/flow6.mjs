@@ -1,0 +1,15 @@
+import { open, wsUrl } from './lib.mjs';
+import { execFileSync } from 'node:child_process';
+const [T] = process.argv.slice(2);
+const { b, p } = await open();
+await p.goto(wsUrl); await p.waitForTimeout(1500);
+await p.getByText('ЭкоЭксперт').nth(1).click(); await p.waitForTimeout(1500);
+await p.getByTestId('workspace-tab-agent_' + T).first().click(); await p.waitForTimeout(3000);
+await p.screenshot({ path: '/tmp/kbt/16-before.png' });
+const out = execFileSync('paseo', ['run', '--no-wait', '--json', '--host', '127.0.0.1:6786', '--cwd', '/Users/agmazin/Library/Developer/paseo-kanban/fixtures/ЭкоЭксперт', '--provider', 'claude', '--model', 'claude-haiku-5-5', '--mode', 'bypassPermissions', '--title', 'Пометка тендера в теме письма', 'Ответь одним словом: начал'], { encoding: 'utf8', env: { ...process.env, PASEO_AGENT_ID: T, PASEO_AGENT_CWD: '' } });
+console.log('created', JSON.parse(out).agentId);
+await p.waitForTimeout(4000);
+await p.screenshot({ path: '/tmp/kbt/17-auto-open.png' });
+await p.getByTestId('workspace-tab-agent_2388dce3-a6e9-4073-828d-28e0c7ae1985').first().click(); await p.waitForTimeout(2000);
+await p.screenshot({ path: '/tmp/kbt/18-switch-chat.png' });
+await b.close();

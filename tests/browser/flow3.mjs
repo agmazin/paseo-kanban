@@ -1,0 +1,10 @@
+import { open, wsUrl } from './lib.mjs';
+const { b, p } = await open();
+await p.goto(wsUrl); await p.waitForTimeout(1500);
+await p.getByText('ЭкоЭксперт').nth(1).click(); await p.waitForTimeout(1500);
+await p.getByRole('button', { name: /канбан/i }).first().click(); await p.waitForTimeout(2000);
+const S5 = process.argv[2];
+await p.getByTestId('kanban-card-' + S5).click(); await p.waitForTimeout(2500);
+console.log('url', p.url());
+await p.screenshot({ path: '/tmp/kbt/10-sub-tab.png' });
+await b.close();
