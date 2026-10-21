@@ -1,0 +1,10 @@
+import { open, root } from './lib.mjs';
+const { b, p } = await open(390, 844);
+await p.goto(root); await p.waitForTimeout(2500);
+await p.getByLabel('Открыть меню').click(); await p.waitForTimeout(800);
+await p.getByText('Канбан', { exact: true }).first().click(); await p.waitForTimeout(2500);
+await p.getByRole('button', { name: /Канбан ЭкоЭксперт/ }).click(); await p.waitForTimeout(1500);
+const horiz = await p.evaluate(() => [...document.querySelectorAll('[data-testid="kanban-board"] div')].filter(n => n.scrollWidth > n.clientWidth + 4 && getComputedStyle(n).overflowX !== 'visible' && getComputedStyle(n).overflowX !== 'hidden').length);
+console.log('horizontal scrollers on phone board:', horiz);
+await p.screenshot({ path: '/tmp/kbt/mb.png' });
+await b.close();
