@@ -83,3 +83,9 @@ export function observeSelectedAgent(onChange: (id: string | null) => void) {
   read();
   return () => observer.disconnect();
 }
+
+// Smooth fade for the empty column on web; native clients fall back to slices.
+export function fadeStyle(tint: string, top: number) {
+  if (Platform.OS !== "web") return null;
+  return { backgroundImage: `linear-gradient(to bottom, rgba(${tint},${top}), rgba(${tint},0))` } as object;
+}

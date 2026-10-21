@@ -9,12 +9,16 @@
 вкладкой. Снимки - `docs/verification/`, сценарии - `tests/browser/`. Отличие от макета: нет "Произвольно"
 (перетаскивания карточек), сортировка по дате - как в макете (по возрастанию = новые сверху).
 
+0.1.1 (21.10.2026, по замечаниям Александра): пустая колонка - бледный блок с затуханием вниз, как в TickTick
+(тот же перепад +4 уровня яркости); "Канбан" чата стал панелью пространства и появился в меню "+" правой панели
+(Paseo показывает там только панели уровня пространства), показывает чат выбранной вкладки.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.0 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.1.1 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

@@ -151,7 +151,7 @@ export function observe(client: PluginClientContext) {
           label: STATUS[col],
           behavior: {
             kind: "action",
-            onPress: () => client.openPanel(CHAT_PANEL, { workspaceId, agentId: parentId, location: "explorer" }),
+            onPress: () => client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" }),
           },
         },
       }),
@@ -191,7 +191,7 @@ export function observe(client: PluginClientContext) {
     if (Date.now() - new Date(a.createdAt).getTime() > 120_000 || opened.has(parentId)) return;
     if (!isWorkspaceRouteOpen(a.workspaceId)) return;
     opened.add(parentId);
-    client.openPanel(CHAT_PANEL, { workspaceId: a.workspaceId, agentId: parentId, location: "explorer" });
+    client.openPanel(CHAT_PANEL, { workspaceId: a.workspaceId, location: "explorer" });
   };
 
   const upsert = (a: PaseoAgent) => {

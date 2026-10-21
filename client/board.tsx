@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { useRpc, useWorkspace, type PluginAgentPanelProps, type PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
+import { useRpc, useWorkspace, type PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
 import { useQuery } from "@tanstack/react-query";
 import { lastReply } from "../shared/contracts";
 import {
@@ -19,7 +19,7 @@ import {
 } from "../shared/model";
 import { useCards, usePrefs } from "./data";
 import { CardView, Dot, GroupHeader, MenuBox, MenuItem, T, ToolButton, palette, type Palette } from "./ui";
-import { installScrollbarStyle, observeSelectedAgent } from "./web";
+import { fadeStyle, installScrollbarStyle, observeSelectedAgent } from "./web";
 
 type Open = (card: Card) => void;
 
@@ -130,6 +130,22 @@ function ColumnBody({
   );
 }
 
+// TickTick draws an empty column as a faint block fading towards the bottom.
+const SLICES = 20;
+function EmptyColumn({ p }: { p: Palette }) {
+  const tint = p.dark ? "255,255,255" : "0,0,0";
+  const top = p.dark ? 0.018 : 0.03;
+  const web = fadeStyle(tint, top);
+  if (web) return <View testID="kanban-col-empty" style={{ flex: 1, minHeight: 160, borderRadius: 8, ...web }} />;
+  return (
+    <View testID="kanban-col-empty" style={{ flex: 1, minHeight: 160, borderRadius: 8, overflow: "hidden" }}>
+      {Array.from({ length: SLICES }, (_, i) => (
+        <View key={i} style={{ flex: 1, backgroundColor: `rgba(${tint},${(top * (1 - i / SLICES)).toFixed(4)})` }} />
+      ))}
+    </View>
+  );
+}
+
 type Menu = null | "sort" | "groupBy" | "sortBy" | "order" | "view";
 
 function Menus({ menu, setMenu, prefs, update, p }: { menu: Menu; setMenu(m: Menu): void; prefs: Prefs; update(patch: Partial<Prefs>): void; p: Palette }) {
@@ -231,8 +247,13 @@ export function Board({ workspaceId, theme, host, navigation }: PluginWorkspaceP
                   {col.archivedChats ? col.archivedChats.reduce((n, g) => n + g.cards.length, 0) : col.cards.length}
                 </T>
               </View>
-              <ScrollView testID="kanban-col-scroll" style={{ flex: 1 }} contentContainerStyle={{ paddingRight: 4, paddingBottom: 16 }}>
+              <ScrollView
+                testID="kanban-col-scroll"
+                style={{ flex: 1 }}
+                contentContainerStyle={{ paddingRight: 4, paddingBottom: 16, flexGrow: 1 }}
+              >
                 <ColumnBody col={col} prefs={prefs} toggle={toggle} open={open} hostId={host.id} p={p} />
+                {!col.archivedChats && col.cards.length === 0 ? <EmptyColumn p={p} /> : null}
               </ScrollView>
             </View>
           ))}
@@ -250,18 +271,26 @@ export function Board({ workspaceId, theme, host, navigation }: PluginWorkspaceP
   );
 }
 
-export function ChatBoard({ agentId, workspaceId, theme, host, navigation }: PluginAgentPanelProps) {
+// Workspace-level explorer panel (listed in the explorer "+" menu); shows the chat of the selected tab.
+export function ChatBoard({ workspaceId, theme, host, navigation }: PluginWorkspacePanelProps) {
   const p = palette(theme);
   const { cards, agents, loading } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
   const toggle = useToggle(prefs, update);
   const [focused, setFocused] = useState<string | null>(null);
   useEffect(() => observeSelectedAgent(setFocused), []);
-  const focusedAgent = focused ? agents.find((a) => a.id === focused && a.workspaceId === workspaceId) : undefined;
-  const self = focusedAgent ?? agents.find((a) => a.id === agentId);
-  const chatId = (self && (parentOf(self) || self.id)) || agentId;
+  const self = focused ? agents.find((a) => a.id === focused && a.workspaceId === workspaceId) : undefined;
+  // No agent tab selected yet: the most recently active chat of this workspace that has cards.
+  const fallback = useMemo(
+    () =>
+      cards
+        .filter((c) => c.workspaceId === workspaceId && c.owner && !c.owner.archived)
+        .sort((a, b) => b.updated.localeCompare(a.updated))[0]?.owner?.id ?? null,
+    [cards, workspaceId],
+  );
+  const chatId = (self && (parentOf(self) || self.id)) || fallback;
   const chat = agents.find((a) => a.id === chatId);
-  const mine = cards.filter((c) => c.owner?.id === chatId);
+  const mine = chatId ? cards.filter((c) => c.owner?.id === chatId) : [];
   const live = mine.filter((c) => !c.archived);
   const arch = mine.filter((c) => c.archived);
   const open: Open = (c) => navigation?.openAgent({ agentId: c.id });

@@ -14,7 +14,7 @@ export default function contribute(client: PluginClientContext) {
     id: "chat",
     title: "Канбан",
     icon: "SquareKanban",
-    context: "agent",
+    context: "workspace",
     locations: ["explorer"],
     Component: ChatBoard,
   });
@@ -31,7 +31,7 @@ export default function contribute(client: PluginClientContext) {
     title: "Канбан чата",
     icon: "SquareKanban",
     keywords: ["kanban", "канбан", "карточки чата"],
-    context: "agent",
+    context: "workspace",
     onSelect: ({ openPanel }) => openPanel("chat", { location: "explorer" }),
   });
   return observe(client);
