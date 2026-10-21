@@ -47,12 +47,16 @@
 вкладке"). Поэтому у исполнителя на телефоне пилюля "Ответить" ("Нужен ответ") или "Написать" (очередь, готово):
 поле ввода поверх листа, сообщение уходит исполнителю. У работающего исполнителя пилюли нет.
 
+0.1.12 (22.10.2026): пилюля "Ответить"/"Написать" убрана (Александр отвечает в полном диалоге, кнопка "Открыть во вкладке").
+Скорость на телефоне: наблюдатель пилюль берёт только живых агентов (204 КБ вместо 824 КБ с архивом), доска и
+панель чата обновляют кэш по событиям агентов, полная перезагрузка раз в минуту вместо каждых 15 секунд.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.11 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.1.12 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

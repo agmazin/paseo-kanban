@@ -5,12 +5,12 @@ import type { PaseoApi, PaseoAgent } from "@getpaseo/client";
 import { readPrefs, savePrefs } from "../shared/contracts";
 import { cardsOf, DEFAULT_PREFS, type Prefs } from "../shared/model";
 
-export async function allAgents(paseo: PaseoApi) {
+export async function allAgents(paseo: PaseoApi, includeArchived = true) {
   let cursor: string | undefined;
   const all: PaseoAgent[] = [];
   do {
     const result = await paseo.agents.list({
-      filter: { includeArchived: true },
+      filter: { includeArchived },
       page: { limit: 200, cursor },
     });
     all.push(...result.entries.map((e) => e.agent));
@@ -26,30 +26,38 @@ export function useCards(hostId: string) {
   const query = useQuery({
     queryKey: key,
     queryFn: () => allAgents(paseo),
-    refetchInterval: 15_000,
+    refetchInterval: 60_000,
+    staleTime: 30_000,
   });
+  // Agent events carry the snapshot: patch the cached list instead of refetching every agent.
   useEffect(() => {
     let alive = true;
-    let timer: ReturnType<typeof setTimeout> | undefined;
     let release: (() => void) | undefined;
-    const refresh = () => {
-      if (timer) return;
-      timer = setTimeout(() => {
-        timer = undefined;
-        void qc.invalidateQueries({ queryKey: key });
-      }, 400);
-    };
     paseo.agents
       .list({ filter: { includeArchived: true }, page: { limit: 1 }, subscribe: {} })
       .then((r) => {
         if (!alive) return r.subscription.release();
-        r.subscription.subscribe({ snapshot: refresh, update: refresh });
+        r.subscription.subscribe({
+          snapshot: () => void qc.invalidateQueries({ queryKey: key }),
+          update: (message) => {
+            if (message.type !== "agent_update") return;
+            const update = message.payload;
+            qc.setQueryData<PaseoAgent[]>(key, (old) => {
+              if (!old) return old;
+              if (update.kind !== "upsert") return old.filter((a) => a.id !== update.agentId);
+              const i = old.findIndex((a) => a.id === update.agent.id);
+              if (i < 0) return [...old, update.agent];
+              const next = old.slice();
+              next[i] = update.agent;
+              return next;
+            });
+          },
+        });
         release = () => r.subscription.release();
       })
       .catch(() => {});
     return () => {
       alive = false;
-      if (timer) clearTimeout(timer);
       release?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

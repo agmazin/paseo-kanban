@@ -1,7 +1,7 @@
 {
   "name": "paseo-kanban",
   "private": true,
-  "version": "0.1.11",
+  "version": "0.1.12",
   "files": [
     "paseo-plugin.json",
     "OVERVIEW.md",

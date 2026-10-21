@@ -35,7 +35,6 @@ const DOTS = Object.fromEntries((["q", "run", "need", "acc", "done"] as Col[]).m
 
 type FormText = { hint: string; placeholder: string; button: string; action: string };
 const RETURN: FormText = { hint: "Что поправить - уйдёт исполнителю сообщением", placeholder: "Замечания", button: "Вернуть", action: "Вернуть в работу" };
-const REPLY: FormText = { hint: "Сообщение исполнителю", placeholder: "Ответ", button: "Отправить", action: "Отправить исполнителю" };
 
 function returnForm(client: PluginClientContext, agentId: string, copy: FormText = RETURN) {
   return function ReturnForm({ theme, close }: PluginButtonContentProps) {
@@ -172,9 +171,7 @@ export function observe(client: PluginClientContext) {
     }
     const col = columnOf(a, agents.get(parentId));
     const canAccept = col === "acc";
-    // Phones show executors as a sheet without a composer: a pill writes to the executor instead.
-    const canReply = mobile && !canAccept && col !== "run";
-    const sig = `${col}|${canAccept}|${canReply}`;
+    const sig = `${col}|${canAccept}`;
     if (old?.sig === sig) return;
     old?.regs.forEach((r) => r.remove());
     const workspaceId = a.workspaceId;
@@ -216,20 +213,6 @@ export function observe(client: PluginClientContext) {
           },
         }),
       );
-    if (canReply)
-      regs.push(
-        client.addComposerPill({
-          id: "reply",
-          workspaceId,
-          agentId: a.id,
-          button: {
-            title: "Написать исполнителю",
-            icon: "MessageSquare",
-            label: col === "need" ? "Ответить" : "Написать",
-            behavior: { kind: "popover", Content: returnForm(client, a.id, REPLY) },
-          },
-        }),
-      );
     pills.set(a.id, { sig, regs });
   };
 
@@ -254,7 +237,8 @@ export function observe(client: PluginClientContext) {
   };
 
   const reload = async () => {
-    const list = await allAgents(client.paseo);
+    // Pills need live agents only: archived ones would add hundreds of snapshots (824 KB on 22.10.2026).
+    const list = await allAgents(client.paseo, false);
     if (lifetime.signal.aborted) return;
     for (const a of list) upsert(a);
     primed = true;
@@ -262,7 +246,7 @@ export function observe(client: PluginClientContext) {
 
   void reload().catch(() => {});
   void client.paseo.agents
-    .list({ filter: { includeArchived: true }, page: { limit: 1 }, subscribe: {}, signal: lifetime.signal })
+    .list({ filter: { includeArchived: false }, page: { limit: 1 }, subscribe: {}, signal: lifetime.signal })
     .then(({ subscription }) => {
       subscription.subscribe({
         snapshot: () => void reload().catch(() => {}),
