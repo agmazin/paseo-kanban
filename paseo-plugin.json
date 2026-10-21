@@ -1,7 +1,7 @@
 {
   "id": "paseo-kanban",
   "name": "Канбан",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "media": [],
   "requirements": {
     "paseo": ">=0.12.0"

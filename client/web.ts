@@ -98,35 +98,66 @@ interface HostNode {
   click(): void;
 }
 const KANBAN_TAB = '[data-testid^="workspace-tab-plugin_"][data-testid*="paseo-kanban"]';
-// Keeps "Канбан" beside Files and Changes: when the explorer shows a workspace
-// without it, the panel is added and the previously selected explorer tab is
-// selected again, so the user still decides what the right panel shows.
+const TABS: Record<string, string> = {
+  files: '[data-testid="workspace-tab-files"]',
+  changes: '[data-testid="workspace-tab-changes_tree"]',
+  kanban: KANBAN_TAB,
+};
+const MEMORY = "paseo-kanban.explorer-tab";
+declare const localStorage: { getItem(key: string): string | null; setItem(key: string, value: string): void } | undefined;
+const kindOf = (testId: string | null | undefined) =>
+  !testId ? null : testId === "workspace-tab-files" ? "files" : testId === "workspace-tab-changes_tree" ? "changes" : testId.includes("paseo-kanban") ? "kanban" : null;
+
+// Keeps "Канбан" beside Files and Changes and remembers the last explorer tab the user picked
+// (Files, Changes or Kanban): another workspace opens its explorer on the same tab.
 export function keepExplorerKanban(add: (workspaceId: string) => void) {
   if (Platform.OS !== "web" || typeof MutationObserver === "undefined") return () => {};
   const doc = document as unknown as HostNode & { body: unknown };
+  const explorer = () => [...doc.querySelectorAll('[data-testid="workspace-explorer-sidebar"]')].find((n) => n.getClientRects().length > 0);
+  const remembered = () => {
+    try {
+      return localStorage?.getItem(MEMORY) ?? null;
+    } catch {
+      return null;
+    }
+  };
   let seen = "";
+  let settling = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  const select = (kind: string | null) => {
+    const target = kind ? explorer()?.querySelector(TABS[kind] ?? "") : null;
+    if (target && target.getAttribute("aria-selected") !== "true") target.click();
+  };
   const read = () => {
     timer = undefined;
-    const side = [...doc.querySelectorAll('[data-testid="workspace-explorer-sidebar"]')].find((n) => n.getClientRects().length > 0);
+    const side = explorer();
     const parts = window.location.pathname.split("/");
-    const workspaceId = parts[parts.indexOf("workspace") + 1] || "";
-    const key = side && parts.includes("workspace") ? workspaceId : "";
-    if (key === seen) return;
+    const key = side && parts.includes("workspace") ? parts[parts.indexOf("workspace") + 1] || "" : "";
+    if (key && key === seen) {
+      // Same workspace: whatever the user picks becomes the remembered tab.
+      if (Date.now() < settling) return;
+      const kind = kindOf(side?.querySelector('[data-testid^="workspace-tab-"][aria-selected="true"]')?.getAttribute("data-testid"));
+      if (kind && kind !== remembered()) {
+        try {
+          localStorage?.setItem(MEMORY, kind);
+        } catch {}
+      }
+      return;
+    }
     seen = key;
-    if (!side || !key || side.querySelector(KANBAN_TAB)) return;
-    const previous = side.querySelector('[data-testid^="workspace-tab-"][aria-selected="true"]')?.getAttribute("data-testid");
-    add(key);
-    if (!previous) return;
-    setTimeout(() => {
-      const again = [...doc.querySelectorAll('[data-testid="workspace-explorer-sidebar"]')].find((n) => n.getClientRects().length > 0);
-      again?.querySelector(`[data-testid="${previous}"]`)?.click();
-    }, 80);
+    if (!side || !key) return;
+    settling = Date.now() + 600;
+    const previous = kindOf(side.querySelector('[data-testid^="workspace-tab-"][aria-selected="true"]')?.getAttribute("data-testid"));
+    const wanted = remembered() ?? previous;
+    if (!side.querySelector(KANBAN_TAB)) {
+      add(key);
+      setTimeout(() => select(wanted ?? previous), 80);
+    } else select(wanted);
   };
   const observer = new MutationObserver(() => {
     if (!timer) timer = setTimeout(read, 150);
   });
-  observer.observe(doc.body, { subtree: true, childList: true });
+  observer.observe(doc.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["aria-selected"] });
   read();
   return () => {
     observer.disconnect();

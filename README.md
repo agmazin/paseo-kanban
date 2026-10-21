@@ -28,12 +28,18 @@
 у каждого чата над полем ввода пилюля "Канбан": меню "Канбан чата" (вкладкой, панель `chat-tab`) и "Канбан
 пространства". Автооткрытие правой панели на телефоне выключено.
 
+0.1.6 (22.10.2026, по замечаниям Александра): на телефоне пилюля "Канбан" открывает одну вкладку "Канбан" на
+пространство (не по вкладке на чат): в ней чат, из которого пришёл, и переключатель "Всё пространство". Общий канбан -
+строка "Канбан" в левом меню (экран с выбором пространства, работает и на телефоне). На компьютере правая панель
+помнит последнюю выбранную вкладку (Файлы, Изменения или Канбан) и открывается на ней в другом пространстве
+(localStorage `paseo-kanban.explorer-tab`). Вкладку плагина в правую панель телефона Paseo 0.12 добавить не даёт.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.5 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.1.6 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

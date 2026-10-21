@@ -10,11 +10,11 @@ import type { PaseoAgent } from "@getpaseo/client";
 import { accept, sendBack } from "../shared/contracts";
 import { columnOf, parentOf, STATUS, type Col } from "../shared/model";
 import { allAgents } from "./data";
+import { focusChat } from "./focus";
 import { palette, T } from "./ui";
 import { isCompactWeb, isWorkspaceRouteOpen, keepExplorerKanban } from "./web";
 
 const CHAT_PANEL = "chat";
-const CHAT_TAB = "chat-tab";
 const BOARD_PANEL = "board";
 
 function dotIcon(col: Col) {
@@ -129,10 +129,12 @@ export function observe(client: PluginClientContext) {
 
   // Phones have no explorer tabs and no plugin header buttons: every chat gets a "Канбан" pill instead.
   const mobile = Platform.OS !== "web" || isCompactWeb();
-  const openChat = (workspaceId: string, chatId: string) =>
-    mobile
-      ? client.openPanel(CHAT_TAB, { workspaceId, agentId: chatId })
-      : client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" });
+  // One "Канбан" tab per workspace on phones: it shows the chat the user came from, with a switch to the whole workspace.
+  const openChat = (workspaceId: string, chatId: string) => {
+    if (!mobile) return client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" });
+    focusChat(workspaceId, chatId);
+    client.openPanel(BOARD_PANEL, { workspaceId });
+  };
 
   const syncPills = (a: PaseoAgent) => {
     const parentId = parentOf(a);
@@ -149,21 +151,10 @@ export function observe(client: PluginClientContext) {
             workspaceId,
             agentId: a.id,
             button: {
-              title: "Канбан",
+              title: "Канбан чата",
               icon: "SquareKanban",
               label: "Канбан",
-              behavior: {
-                kind: "menu",
-                items: [
-                  { kind: "item", id: "chat", title: "Канбан чата", behavior: { kind: "action", onPress: () => openChat(workspaceId, a.id) } },
-                  {
-                    kind: "item",
-                    id: "board",
-                    title: "Канбан пространства",
-                    behavior: { kind: "action", onPress: () => client.openPanel(BOARD_PANEL, { workspaceId }) },
-                  },
-                ],
-              },
+              behavior: { kind: "action", onPress: () => openChat(workspaceId, a.id) },
             },
           }),
         ],

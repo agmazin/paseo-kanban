@@ -1,5 +1,6 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
-import { Board, ChatBoard, ChatBoardTab } from "./client/board";
+import { Board, BoardScreen, ChatBoard, ChatBoardTab } from "./client/board";
+import { KanbanSidebarItem } from "./client/sidebar";
 import { observe } from "./client/observer";
 export default function contribute(client: PluginClientContext) {
   client.addWorkspacePanel({
@@ -26,6 +27,8 @@ export default function contribute(client: PluginClientContext) {
     locations: ["workspace"],
     Component: ChatBoardTab,
   });
+  client.addScreen({ id: "board", title: "Канбан", Component: BoardScreen });
+  client.addSidebarHeaderItem({ id: "kanban", title: "Канбан", Component: KanbanSidebarItem });
   client.addCommandCenterItem({
     id: "open-board",
     title: "Канбан пространства",

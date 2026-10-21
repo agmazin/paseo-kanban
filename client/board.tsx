@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { useRpc, useWorkspace, type PluginAgentPanelProps, type PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
+import { usePaseo, useRpc, useWorkspace, type PluginAgentPanelProps, type PluginScreenProps, type PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
+import { lastBoardWorkspace, rememberWorkspace, useFocusedChat } from "./focus";
 import { useQuery } from "@tanstack/react-query";
 import { lastReply } from "../shared/contracts";
 import {
@@ -18,7 +19,7 @@ import {
   type Prefs,
 } from "../shared/model";
 import { useCards, usePrefs } from "./data";
-import { CardView, Dot, GroupHeader, MenuBox, MenuItem, T, ToolButton, palette, type Palette } from "./ui";
+import { CardView, Dot, GroupHeader, MenuBox, MenuItem, T, ToolButton, palette, type Palette, type Theme } from "./ui";
 import { fadeStyle, installScrollbarStyle, observeSelectedAgent } from "./web";
 
 type Open = (card: Card) => void;
@@ -197,9 +198,63 @@ function Menus({ menu, setMenu, prefs, update, p }: { menu: Menu; setMenu(m: Men
   );
 }
 
-export function Board({ workspaceId, theme, host, navigation }: PluginWorkspacePanelProps) {
+type Nav = PluginWorkspacePanelProps["navigation"];
+type ViewProps = { workspaceId: string; theme: Theme; host: { id: string }; navigation?: Nav };
+
+export function Board(props: PluginWorkspacePanelProps) {
+  const focus = useFocusedChat(props.workspaceId);
+  const ws = useWorkspace(props.workspaceId, (w) => ({ name: w.name, title: w.title }));
+  useEffect(() => rememberWorkspace(props.workspaceId), [props.workspaceId]);
+  return <BoardView {...props} title={ws?.title || ws?.name || "Канбан"} focusChatId={props.layout.compact ? focus : null} />;
+}
+
+// Left menu entry: the workspace board as a screen with workspace chips (reachable on phones too).
+export function BoardScreen({ theme, host, navigation, params }: PluginScreenProps) {
   const p = palette(theme);
-  const ws = useWorkspace(workspaceId, (w) => ({ name: w.name, title: w.title }));
+  const paseo = usePaseo();
+  const list = useQuery({
+    queryKey: ["kanban-workspaces", host.id],
+    queryFn: async () => (await paseo.workspaces.list({ page: { limit: 200 } })).entries.filter((w) => !w.archivingAt && !w.background),
+    staleTime: 30_000,
+  });
+  const workspaces = list.data ?? [];
+  const [picked, setPicked] = useState<string | null>(params.workspaceId || lastBoardWorkspace());
+  const workspaceId = workspaces.some((w) => w.id === picked) ? picked : (workspaces[0]?.id ?? null);
+  return (
+    <View style={{ flex: 1, backgroundColor: p.bg }}>
+      <ScrollView horizontal style={{ flexGrow: 0 }} contentContainerStyle={{ gap: 8, paddingHorizontal: 22, paddingTop: 14 }}>
+        {workspaces.map((w) => (
+          <Pressable
+            key={w.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Канбан ${w.title || w.name}`}
+            onPress={() => (setPicked(w.id), rememberWorkspace(w.id))}
+            style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: w.id === workspaceId ? p.button : "transparent" }}
+          >
+            <T color={w.id === workspaceId ? p.fg : p.fg2} size={13.5}>
+              {w.title || w.name}
+            </T>
+          </Pressable>
+        ))}
+      </ScrollView>
+      {workspaceId ? (
+        <BoardView
+          workspaceId={workspaceId}
+          title={workspaces.find((w) => w.id === workspaceId)?.title || workspaces.find((w) => w.id === workspaceId)?.name || "Канбан"}
+          theme={theme}
+          host={host}
+          navigation={navigation}
+          focusChatId={null}
+        />
+      ) : null}
+    </View>
+  );
+}
+
+function BoardView({ workspaceId, title, theme, host, navigation, focusChatId }: ViewProps & { title: string; focusChatId: string | null }) {
+  const p = palette(theme);
+  const [mode, setMode] = useState<"chat" | "all">(focusChatId ? "chat" : "all");
+  useEffect(() => setMode(focusChatId ? "chat" : "all"), [focusChatId]);
   const { cards } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
   const toggle = useToggle(prefs, update);
@@ -207,11 +262,12 @@ export function Board({ workspaceId, theme, host, navigation }: PluginWorkspaceP
   useEffect(() => installScrollbarStyle(), []);
   const cols = useMemo(() => columns(cards.filter((c) => c.workspaceId === workspaceId), prefs), [cards, prefs, workspaceId]);
   const open: Open = (c) => navigation?.openAgent({ agentId: c.id });
+  const chatTitle = focusChatId ? cards.find((c) => c.owner?.id === focusChatId)?.owner?.title : null;
   return (
     <View testID="kanban-board" style={{ flex: 1, backgroundColor: p.bg, paddingTop: 16, paddingLeft: 22 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10, paddingRight: 22 }}>
         <T color={p.fg} size={18} weight="600" style={{ flexShrink: 1 }}>
-          {ws?.title || ws?.name || "Канбан"}
+          {title}
         </T>
         <View style={{ flex: 1 }} />
         <ToolButton
@@ -224,34 +280,62 @@ export function Board({ workspaceId, theme, host, navigation }: PluginWorkspaceP
         />
         <ToolButton testID="kanban-view-button" icon="Ellipsis" label="Вид" active={menu === "view"} onPress={() => setMenu(menu === "view" ? null : "view")} p={p} />
       </View>
-        <ScrollView
-          testID="kanban-cols"
-          horizontal
-          style={{ flex: 1 }}
-          contentContainerStyle={{ gap: 16, paddingRight: 22, minHeight: "100%" }}
-        >
-          {cols.map((col) => (
-            <View key={col.key} testID={`kanban-col-${col.key}`} style={{ width: 282, flexShrink: 0 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 4, paddingBottom: 8, paddingHorizontal: 2 }}>
-                {col.status ? <Dot col={col.status} p={p} /> : null}
-                <T color={p.fg} size={14.5} weight="600" style={{ flexShrink: 1 }}>
-                  {col.name}
-                </T>
-                <T color={p.fg3} size={12.5}>
-                  {col.archivedChats ? col.archivedChats.reduce((n, g) => n + g.cards.length, 0) : col.cards.length}
-                </T>
-              </View>
-              <ScrollView
-                testID="kanban-col-scroll"
-                style={{ flex: 1 }}
-                contentContainerStyle={{ paddingRight: 4, paddingBottom: 16, flexGrow: 1 }}
-              >
-                <ColumnBody col={col} prefs={prefs} toggle={toggle} open={open} hostId={host.id} p={p} />
-                {!col.archivedChats && col.cards.length === 0 ? <EmptyColumn p={p} /> : null}
-              </ScrollView>
-            </View>
+      {focusChatId ? (
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 10, paddingRight: 22 }}>
+          {(
+            [
+              ["chat", chatTitle ? `Чат ${chatTitle}` : "Этот чат"],
+              ["all", "Всё пространство"],
+            ] as const
+          ).map(([key, label]) => (
+            <Pressable
+              key={key}
+              accessibilityRole="button"
+              accessibilityLabel={label}
+              onPress={() => setMode(key)}
+              style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: mode === key ? p.button : "transparent" }}
+            >
+              <T color={mode === key ? p.fg : p.fg2} size={13.5}>
+                {label}
+              </T>
+            </Pressable>
           ))}
-        </ScrollView>
+        </View>
+      ) : null}
+      {focusChatId && mode === "chat" ? (
+        <View style={{ flex: 1, marginLeft: -14 }}>
+          <ChatView workspaceId={workspaceId} theme={theme} host={host} navigation={navigation} fixedAgentId={focusChatId} />
+        </View>
+      ) : (
+          <ScrollView
+            testID="kanban-cols"
+            horizontal
+            style={{ flex: 1 }}
+            contentContainerStyle={{ gap: 16, paddingRight: 22, minHeight: "100%" }}
+          >
+            {cols.map((col) => (
+              <View key={col.key} testID={`kanban-col-${col.key}`} style={{ width: 282, flexShrink: 0 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 4, paddingBottom: 8, paddingHorizontal: 2 }}>
+                  {col.status ? <Dot col={col.status} p={p} /> : null}
+                  <T color={p.fg} size={14.5} weight="600" style={{ flexShrink: 1 }}>
+                    {col.name}
+                  </T>
+                  <T color={p.fg3} size={12.5}>
+                    {col.archivedChats ? col.archivedChats.reduce((n, g) => n + g.cards.length, 0) : col.cards.length}
+                  </T>
+                </View>
+                <ScrollView
+                  testID="kanban-col-scroll"
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ paddingRight: 4, paddingBottom: 16, flexGrow: 1 }}
+                >
+                  <ColumnBody col={col} prefs={prefs} toggle={toggle} open={open} hostId={host.id} p={p} />
+                  {!col.archivedChats && col.cards.length === 0 ? <EmptyColumn p={p} /> : null}
+                </ScrollView>
+              </View>
+            ))}
+          </ScrollView>
+      )}
       {menu ? (
         <Pressable
           accessibilityLabel="Закрыть меню"
@@ -270,11 +354,11 @@ export function ChatBoard(props: PluginWorkspacePanelProps) {
 }
 
 // Mobile: the explorer has fixed tabs in Paseo 0.12, so the chat kanban opens as a tab for a known chat.
-export function ChatBoardTab({ agentId, ...props }: PluginAgentPanelProps) {
-  return <ChatView {...props} context="workspace" fixedAgentId={agentId} />;
+export function ChatBoardTab({ agentId, workspaceId, theme, host, navigation }: PluginAgentPanelProps) {
+  return <ChatView workspaceId={workspaceId} theme={theme} host={host} navigation={navigation} fixedAgentId={agentId} />;
 }
 
-function ChatView({ workspaceId, theme, host, navigation, fixedAgentId }: PluginWorkspacePanelProps & { fixedAgentId?: string }) {
+function ChatView({ workspaceId, theme, host, navigation, fixedAgentId }: ViewProps & { fixedAgentId?: string }) {
   const p = palette(theme);
   const { cards, agents, loading } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
