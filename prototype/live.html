@@ -212,6 +212,18 @@ html,body{margin:0;background:var(--page);color:var(--fg);font:14px/1.35 -apple-
 .pi .v{margin-left:auto;color:var(--fg2);font-size:13px;display:inline-flex;align-items:center;gap:4px}.pi .v .ico{width:13px;height:13px}
 .pi.sel{color:#6d9df5}.pi .ck{margin-left:auto;color:#6d9df5;display:inline-flex}.pi .ck .ico{width:16px;height:16px}
 .big .top{font-size:13px}
+.sdot{display:inline-block;width:8px;height:8px;border-radius:50%;flex:0 0 8px;margin-right:2px}
+.kc2{padding:8px 11px 9px!important}
+.kc2 .top2{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--fg3);margin-bottom:3px}
+.kc2 .top2 .st2{margin-left:auto;display:inline-flex;align-items:center;gap:5px}
+.kc2 .own{display:flex;align-items:center;gap:6px;margin-top:7px;font-size:12.5px;color:#c4c4c4;font-weight:500}
+.kc2 .own .logo{width:14px;height:14px;flex-basis:14px;color:#c9c9c9}
+.kc2 .exe{display:flex;align-items:center;gap:5px;margin-top:4px;font-size:11.5px;color:var(--fg3)}
+.kc2 .exe .ico{width:13px;height:13px;color:#555}
+.kc2 .exe .logo{width:12px;height:12px;flex-basis:12px;color:#8d8d8d}
+.kc2 .exe .en{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kc2 .own span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kc2.done .own{color:var(--fg3)}
+.ch2 .sdot{align-self:center}
 .pi.hl{background:#2c2c2c}.gh2.archg{color:var(--fg3)}
 .ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:18px 28px 0;color:var(--fg2);font-size:13px}
 .ctl .btn{cursor:pointer}
@@ -228,7 +240,6 @@ input.in::placeholder{color:var(--fg3)}
 <div class="ctl">
   <b style="color:var(--fg)">Живой макет "Канбан"</b>
   <span class="btn" data-act="auto">Агент "Тендер" переходит к реализации</span>
-  <span class="grp2">Карточка: <span class="btn" data-rd="A">А - свой исполнитель</span><span class="btn" data-rd="B">Б - пункт работы чата</span></span>
   <span class="btn" data-act="reset">Сначала</span>
 </div>
 <div class="livewrap"><div class="window" id="live"></div></div>
@@ -428,6 +439,7 @@ Object.assign(I, {
   check:'<path d="m5 12 5 5 9-10"/>',
   groupby:'<rect x="4" y="5" width="16" height="10" rx="3"/><path d="M4 19h16"/>',
   right:'<path d="m9 6 6 6-6 6"/>',
+  corner:'<path d="M6 4v7a4 4 0 0 0 4 4h9"/><path d="m15 11 4 4-4 4"/>',
 });
 const ST = { view:'kan', exp:true, archOpen:false, archChat:null, modal:null, reading:'A', auto:false,
   group:'status', sort:'chat', order:'asc', hideDone:false, details:false, menu:null, collapsed:{}, manual:{} };
@@ -438,13 +450,13 @@ function resetTasks() {
     {id:11, col:'q', t:'Пометка тендера в теме письма - начнёт после тендерного шага', chat:'Тендер', exec:'Пометка тендера', c:8, u:10, tm:'15:30', now:'Ждёт очереди.'},
     {id:12, col:'q', t:'Разбор почты на хабе до amoCRM - после отчёта по звонкам', chat:'Общий ИИ', exec:'Разбор почты', c:2, u:4, tm:'вчера', now:'Ждёт очереди.'},
     {id:3, col:'run', t:'Тендерный шаг в хабе - выложен, ждёт первое живое письмо', chat:'Тендер', exec:'Тендерный шаг', c:3, u:12, tm:'12:20', now:'Шаг на Opus работает, хаб разберёт письма на ближайшем проходе.'},
-    {id:13, col:'run', t:'Разбор вложений в письмах - самопроверка на тестовом хабе', chat:'Общий ИИ', exec:'Разбор вложений', c:9, u:14, tm:'16:05', now:'Исполнитель сам гоняет прогон на тестовом хабе, тебя пока не ждёт.'},
+    {id:13, col:'run', t:'Разбор вложений в письмах - самопроверка на тестовом хабе', chat:'Общий ИИ', exec:'Разбор вложений', c:9, u:14, tm:'16:05', ep:'codex', now:'Исполнитель сам гоняет прогон на тестовом хабе, тебя пока не ждёт.'},
     {id:5, col:'need', t:'Итоги дебиторки: какие этапы считать просроченными?', chat:'Дебиторка', exec:'Итоги дебиторки', c:6, u:15, tm:'16:40', now:'Суммы по этапам посчитаны.', need:'Все этапы после "Счёт выставлен" или только "Ждём оплату"?'},
     {id:4, col:'acc', t:'Виджет "Дебиторка" вместо AMGROUP - выложен, сверен с оригиналом', chat:'Дебиторка', exec:'Виджет Дебиторка', c:4, u:16, tm:'17:06', now:'Готово и выложено.', checked:['исполнитель: вид по снимкам оригинала, сохранение суммы','оркестратор: прошёл виджет руками в карточке сделки']},
-    {id:6, col:'acc', t:'Отчёт по звонкам за октябрь - готов, уйдёт после твоего "лей"', chat:'Общий ИИ', exec:'Отчёт по звонкам', c:7, u:13, tm:'16:52', p:'codex', now:'Отчёт лежит в outbox.', checked:['исполнитель: цифры сверены с onlinePBX','оркестратор: прочитал отчёт целиком']},
+    {id:6, col:'acc', t:'Отчёт по звонкам за октябрь - готов, уйдёт после твоего "лей"', chat:'Общий ИИ', exec:'Отчёт по звонкам', c:7, u:13, tm:'16:52', ep:'codex', now:'Отчёт лежит в outbox.', checked:['исполнитель: цифры сверены с onlinePBX','оркестратор: прочитал отчёт целиком']},
     {id:7, col:'done', t:'Тег "Тендер" в amoCRM - работает на живых сделках', chat:'Тендер', exec:'Тег Тендер', c:1, u:11, tm:'13:05', now:'Принято тобой.'},
     {id:8, col:'done', t:'Причина отказа стала обязательным полем', chat:'Дебиторка', exec:'Причина отказа', c:0, u:3, tm:'вчера', now:'Принято тобой.'},
-    {id:9, col:'done', t:'Чёрный список: номера импортированы', chat:'Общий ИИ', exec:'Чёрный список', c:0.5, u:2, tm:'19 окт', p:'codex', now:'Принято тобой.'},
+    {id:9, col:'done', t:'Чёрный список: номера импортированы', chat:'Общий ИИ', exec:'Чёрный список', c:0.5, u:2, tm:'19 окт', ep:'codex', now:'Принято тобой.'},
   ];
 }
 resetTasks();
@@ -454,31 +466,29 @@ const ATASKS = [
   {id:103, arch:true, col:'q', t:'Чистка старых спам-сделок - не начата, чат закрыт', chat:'СПАМ ЭЭ', exec:'Чистка спама', c:-5, u:-4, tm:'12 окт', now:'Чат в архиве.'},
   {id:104, arch:true, col:'done', t:'Карусель менеджеров по очереди - работает', chat:'Карусель', exec:'Карусель', c:-8, u:-6, tm:'5 окт', now:'Чат в архиве.'},
   {id:105, arch:true, col:'done', t:'Пропуск отпускников в карусели - работает', chat:'Карусель', exec:'Пропуск отпускников', c:-8, u:-6, tm:'5 окт', now:'Чат в архиве.'},
-  {id:106, arch:true, col:'run', t:'Импорт чёрного списка из Мегаплана - брошен на середине', chat:'Чёрный список (старый)', exec:'Импорт из Мегаплана', c:-10, u:-9, tm:'1 окт', p:'codex', now:'Чат в архиве.'},
-  {id:107, arch:true, col:'acc', t:'Отчёт по блокировкам - не принят, чат закрыт', chat:'Чёрный список (старый)', exec:'Отчёт по блокировкам', c:-10, u:-9, tm:'1 окт', p:'codex', now:'Чат в архиве.', checked:['исполнитель: проверил выгрузку']},
-  {id:108, arch:true, col:'done', t:'Блок звонков в onlinePBX - работает', chat:'Чёрный список (старый)', exec:'Блок звонков', c:-10, u:-9, tm:'1 окт', p:'codex', now:'Чат в архиве.'},
+  {id:106, arch:true, col:'run', t:'Импорт чёрного списка из Мегаплана - брошен на середине', chat:'Чёрный список (старый)', exec:'Импорт из Мегаплана', c:-10, u:-9, tm:'1 окт', ep:'codex', now:'Чат в архиве.'},
+  {id:107, arch:true, col:'acc', t:'Отчёт по блокировкам - не принят, чат закрыт', chat:'Чёрный список (старый)', exec:'Отчёт по блокировкам', c:-10, u:-9, tm:'1 окт', ep:'codex', now:'Чат в архиве.', checked:['исполнитель: проверил выгрузку']},
+  {id:108, arch:true, col:'done', t:'Блок звонков в onlinePBX - работает', chat:'Чёрный список (старый)', exec:'Блок звонков', c:-10, u:-9, tm:'1 окт', ep:'codex', now:'Чат в архиве.'},
 ];
 const COLS = [['q','Очередь'],['run','В работе'],['need','Нужен ответ'],['acc','Ждёт приёмки'],['done','Готово']];
 const SORTS = [['manual','Произвольно'],['u','Дата изменения'],['c','Дата создания'],['t','Название'],['status','Статус'],['chat','Агент'],['exec','Исполнитель']];
 const GROUPS = [['status','Статус'],['chat','Агент'],['exec','Исполнитель'],['prov','Нейросеть'],['date','Дата изменения']];
 const groupName = () => GROUPS.find(g => g[0] === ST.group)[1];
 const STATUS = Object.fromEntries(COLS);
+const DOT = {q:'#6b6b6b', run:'var(--run)', need:'var(--warn)', acc:'#a78bfa', done:'var(--ok)'};
+const dot = (k) => `<i class="sdot" style="background:${DOT[k]}"></i>`;
 const fieldOf = (x, f) => f === 'status' ? x.col : f === 'prov' ? (x.p === 'codex' ? 'Codex' : 'Claude') : f === 'date' ? (/^\d\d:\d\d$|сейчас/.test(x.tm) ? 'Сегодня' : x.tm === 'вчера' ? 'Вчера' : 'Раньше') : x[f];
 const labelOf = (f, v) => f === 'status' ? STATUS[v] : v;
 const sortName = () => SORTS.find(s => s[0] === ST.sort)[1];
 const ownerOf = (x) => ST.reading === 'A' ? x.exec : x.chat;
-function meta(x, inChat, sub) {
-  const parts = [];
-  if (!inChat && ST.group !== 'status' && sub !== 'status') parts.push(STATUS[x.col]);
-  if (ST.reading === 'A') { if (inChat || ST.group === 'chat' || sub === 'chat') parts.push(x.exec); else if (ST.group !== 'exec' && sub !== 'exec') parts.push(x.exec + ' · из чата ' + x.chat); else parts.push(x.chat); }
-  else if (!inChat && ST.group !== 'chat' && sub !== 'chat') parts.push(x.chat);
-  parts.push(x.tm);
-  return parts.join(' · ');
-}
 function kc2(x, inChat, sub) {
+  const showStatus = !inChat && ST.group !== 'status' && sub !== 'status';
   return `<div class="kc2 ${x.col==='done'||x.arch?'done':''}" draggable="${ST.group==='status' && !x.arch}" data-card="${x.id}" data-col="${x.col}">
-    <span class="av">${L[x.p||'claude']}</span><div class="t2">${x.t}</div><div class="m2">${meta(x, inChat, sub)}</div>
-    ${ST.details ? `<div class="d2">${x.now}${x.need ? ' ' + x.need : ''}</div>` : ''}</div>`;
+    <div class="top2"><span>${x.tm}</span>${showStatus ? `<span class="st2">${dot(x.col)}${STATUS[x.col]}</span>` : ''}</div>
+    <div class="t2">${x.t}</div>
+    ${ST.details ? `<div class="d2">${x.now}${x.need ? ' ' + x.need : ''}</div>` : ''}
+    ${inChat ? '' : `<div class="own">${L[x.p||'claude']}<span>${x.chat}</span></div>`}
+    <div class="exe" title="Исполнитель (подагент)">${ic('corner')}${L[x.ep||x.p||'claude']}<span class="en">${x.exec}</span></div></div>`;
 }
 function sorted(list, col) {
   const dir = ST.order === 'asc' ? 1 : -1;
@@ -491,9 +501,8 @@ function cards(col, list, inChat, keyPrefix) {
   const sub = SUBS.includes(ST.sort) && ST.sort !== ST.group ? ST.sort : (SUBS.includes(ST.sort) && ST.group !== 'status' ? 'status' : null);
   if (!sub) return sorted(list, col).map(x => kc2(x, inChat, null)).join('');
   const order = sub === 'status' ? COLS.map(c => c[0]) : [...new Set(list.map(x => fieldOf(x, sub)))].sort((a, b) => a.localeCompare(b, 'ru'));
-  if (ST.order === 'desc') order.reverse();
   return order.filter(g => list.some(x => fieldOf(x, sub) === g)).map(g => { const items = sorted(list.filter(x => fieldOf(x, sub) === g), col); const key = keyPrefix + col + '|' + g; const open = !ST.collapsed[key];
-    return `<div class="gh2" data-grp="${key}">${chev(open)}<span>${labelOf(sub, g)}</span><span class="n">${items.length}</span></div>${open ? items.map(x => kc2(x, inChat, sub)).join('') : ''}`; }).join('');
+    return `<div class="gh2" data-grp="${key}">${chev(open)}${sub==='status' ? dot(g) : ''}<span>${labelOf(sub, g)}</span><span class="n">${items.length}</span></div>${open ? items.map(x => kc2(x, inChat, sub)).join('') : ''}`; }).join('');
 }
 function colBody(col, list, alist) {
   let h = cards(col, list, false, '');
@@ -525,7 +534,6 @@ function columnsDef() {
   else if (ST.group === 'prov') keys = ['Claude', 'Codex'];
   else if (ST.group === 'date') keys = ['Сегодня', 'Вчера', 'Раньше'];
   else keys = [...new Set(live.map(x => fieldOf(x, ST.group)))].sort((a, b) => a.localeCompare(b, 'ru'));
-  if (ST.group !== 'status' && ST.order === 'desc') keys.reverse();
   const cols = keys.map(k => ({ key: k, name: labelOf(ST.group, k), list: live.filter(x => fieldOf(x, ST.group) === k), alist: arch.filter(x => fieldOf(x, ST.group) === k) }));
   if (ST.group === 'chat' || ST.group === 'exec') cols.push({ key: 'archchats', name: 'Архивные чаты', list: [], alist: [], archChats: arch });
   return cols;
@@ -542,7 +550,7 @@ function boardL() {
       <span class="tb ${ST.menu && ST.menu!=='view'?'on':''}" data-menu="sort" title="Группировка и сортировка">${ic('updown')}</span>
       <span class="tb ${ST.menu==='view'?'on':''}" data-menu="view" title="Вид">${ic('dots')}</span></div>
     <div class="cols2" style="grid-template-columns:repeat(${cols.length},minmax(${cols.length > 5 ? '210px' : '0'},1fr))">
-      ${cols.map(c => `<div class="col2"><div class="ch2">${c.name}<span class="n">${c.archChats ? c.archChats.length : c.list.length}</span></div>${c.archChats ? archColumn(c) : colBody(c.key, c.list, c.alist)}</div>`).join('')}
+      ${cols.map(c => `<div class="col2"><div class="ch2">${ST.group==='status' ? dot(c.key) : ''}${c.name}<span class="n">${c.archChats ? c.archChats.length : c.list.length}</span></div>${c.archChats ? archColumn(c) : colBody(c.key, c.list, c.alist)}</div>`).join('')}
     </div>
     ${menus()}</div>`;
 }
@@ -553,7 +561,7 @@ function explorerL(chat) {
     <div class="exph"><div class="tab">${ic('file')}Файлы</div><div class="tab">${ic('diff')}Изменения</div><div class="tab on">${ic('kan')}Канбан</div><span class="sp"></span><span data-exp="close" style="cursor:pointer;display:inline-flex">${ic('x')}</span></div>
     <div class="expb" style="overflow:auto;gap:0">
       ${mine.length ? order.map(([k, n]) => { const l = mine.filter(x => x.col === k); if (!l.length) return ''; const key = 'p|' + k; const open = !ST.collapsed[key];
-        return `<div class="gh2" data-grp="${key}">${chev(open)}<span>${n}</span><span class="n">${l.length}</span></div>${open ? l.map(x => kc2(x, true, 'status')).join('') : ''}`; }).join('')
+        return `<div class="gh2" data-grp="${key}">${chev(open)}${dot(k)}<span>${n}</span><span class="n">${l.length}</span></div>${open ? l.map(x => kc2(x, true, 'status')).join('') : ''}`; }).join('')
       : '<div class="m2" style="padding:4px 2px;color:var(--fg3)">Пока карточек нет. Появятся, когда агент перейдёт к реализации.</div>'}
     </div></aside>`;
 }
