@@ -362,7 +362,7 @@ export function ChatView({
   return (
     <ScrollView
       testID="kanban-chat"
-      style={sheet ? { flexGrow: 0 } : { flex: 1 }}
+      style={{ flex: 1 }}
       contentContainerStyle={sheet ? { paddingBottom: 6 } : { padding: 14 }}
     >
       {sheet ? null : (
