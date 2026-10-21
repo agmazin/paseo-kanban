@@ -23,12 +23,17 @@
 
 0.1.4: имена моделей Codex как в Paseo ("GPT-6.1-Sol"). Правила работы через Канбан - `/Users/agmazin/Yandex.Disk.localized/public/references/paseo-kanban.md`.
 
+0.1.5 (22.10.2026): телефон. В Paseo 0.12 у правой панели на телефоне жёсткий набор вкладок ("Файлы", для git ещё
+"Изменения", без "+"), а кнопки плагинов в шапке не показываются. Поэтому в приложении и в узком окне (меньше 700 px)
+у каждого чата над полем ввода пилюля "Канбан": меню "Канбан чата" (вкладкой, панель `chat-tab`) и "Канбан
+пространства". Автооткрытие правой панели на телефоне выключено.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.4 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.1.5 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

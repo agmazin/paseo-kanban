@@ -1,5 +1,5 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
-import { Board, ChatBoard } from "./client/board";
+import { Board, ChatBoard, ChatBoardTab } from "./client/board";
 import { observe } from "./client/observer";
 export default function contribute(client: PluginClientContext) {
   client.addWorkspacePanel({
@@ -17,6 +17,14 @@ export default function contribute(client: PluginClientContext) {
     context: "workspace",
     locations: ["explorer"],
     Component: ChatBoard,
+  });
+  client.addWorkspacePanel({
+    id: "chat-tab",
+    title: "Канбан чата",
+    icon: "SquareKanban",
+    context: "agent",
+    locations: ["workspace"],
+    Component: ChatBoardTab,
   });
   client.addCommandCenterItem({
     id: "open-board",

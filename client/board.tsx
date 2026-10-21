@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
-import { useRpc, useWorkspace, type PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
+import { useRpc, useWorkspace, type PluginAgentPanelProps, type PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
 import { useQuery } from "@tanstack/react-query";
 import { lastReply } from "../shared/contracts";
 import {
@@ -265,14 +265,24 @@ export function Board({ workspaceId, theme, host, navigation }: PluginWorkspaceP
 }
 
 // Workspace-level explorer panel (listed in the explorer "+" menu); shows the chat of the selected tab.
-export function ChatBoard({ workspaceId, theme, host, navigation }: PluginWorkspacePanelProps) {
+export function ChatBoard(props: PluginWorkspacePanelProps) {
+  return <ChatView {...props} />;
+}
+
+// Mobile: the explorer has fixed tabs in Paseo 0.12, so the chat kanban opens as a tab for a known chat.
+export function ChatBoardTab({ agentId, ...props }: PluginAgentPanelProps) {
+  return <ChatView {...props} context="workspace" fixedAgentId={agentId} />;
+}
+
+function ChatView({ workspaceId, theme, host, navigation, fixedAgentId }: PluginWorkspacePanelProps & { fixedAgentId?: string }) {
   const p = palette(theme);
   const { cards, agents, loading } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
   const toggle = useToggle(prefs, update);
   const [focused, setFocused] = useState<string | null>(null);
-  useEffect(() => observeSelectedAgent(setFocused), []);
-  const self = focused ? agents.find((a) => a.id === focused && a.workspaceId === workspaceId) : undefined;
+  useEffect(() => (fixedAgentId ? undefined : observeSelectedAgent(setFocused)), [fixedAgentId]);
+  const selected = fixedAgentId ?? focused;
+  const self = selected ? agents.find((a) => a.id === selected && a.workspaceId === workspaceId) : undefined;
   // No agent tab selected yet: the most recently active chat of this workspace that has cards.
   const fallback = useMemo(
     () =>

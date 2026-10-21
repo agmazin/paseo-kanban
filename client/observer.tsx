@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, TextInput, View } from "react-native";
+import { Platform, Pressable, TextInput, View } from "react-native";
 import type {
   PluginButtonContentProps,
   PluginButtonIconProps,
@@ -11,9 +11,10 @@ import { accept, sendBack } from "../shared/contracts";
 import { columnOf, parentOf, STATUS, type Col } from "../shared/model";
 import { allAgents } from "./data";
 import { palette, T } from "./ui";
-import { isWorkspaceRouteOpen, keepExplorerKanban } from "./web";
+import { isCompactWeb, isWorkspaceRouteOpen, keepExplorerKanban } from "./web";
 
 const CHAT_PANEL = "chat";
+const CHAT_TAB = "chat-tab";
 const BOARD_PANEL = "board";
 
 function dotIcon(col: Col) {
@@ -126,9 +127,49 @@ export function observe(client: PluginClientContext) {
     );
   };
 
+  // Phones have no explorer tabs and no plugin header buttons: every chat gets a "Канбан" pill instead.
+  const mobile = Platform.OS !== "web" || isCompactWeb();
+  const openChat = (workspaceId: string, chatId: string) =>
+    mobile
+      ? client.openPanel(CHAT_TAB, { workspaceId, agentId: chatId })
+      : client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" });
+
   const syncPills = (a: PaseoAgent) => {
     const parentId = parentOf(a);
     const old = pills.get(a.id);
+    if (!parentId && mobile && !a.archivedAt && a.workspaceId) {
+      if (old?.sig === "chat") return;
+      old?.regs.forEach((r) => r.remove());
+      const workspaceId = a.workspaceId;
+      pills.set(a.id, {
+        sig: "chat",
+        regs: [
+          client.addComposerPill({
+            id: "kanban",
+            workspaceId,
+            agentId: a.id,
+            button: {
+              title: "Канбан",
+              icon: "SquareKanban",
+              label: "Канбан",
+              behavior: {
+                kind: "menu",
+                items: [
+                  { kind: "item", id: "chat", title: "Канбан чата", behavior: { kind: "action", onPress: () => openChat(workspaceId, a.id) } },
+                  {
+                    kind: "item",
+                    id: "board",
+                    title: "Канбан пространства",
+                    behavior: { kind: "action", onPress: () => client.openPanel(BOARD_PANEL, { workspaceId }) },
+                  },
+                ],
+              },
+            },
+          }),
+        ],
+      });
+      return;
+    }
     if (!parentId || a.archivedAt || !a.workspaceId) {
       old?.regs.forEach((r) => r.remove());
       pills.delete(a.id);
@@ -151,7 +192,7 @@ export function observe(client: PluginClientContext) {
           label: STATUS[col],
           behavior: {
             kind: "action",
-            onPress: () => client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" }),
+            onPress: () => openChat(workspaceId, parentId),
           },
         },
       }),
@@ -187,7 +228,7 @@ export function observe(client: PluginClientContext) {
   // The chat kanban opens by itself when a chat starts its first executor while on screen.
   const autoOpen = (a: PaseoAgent) => {
     const parentId = parentOf(a);
-    if (!primed || known.has(a.id) || !parentId || a.archivedAt || !a.workspaceId) return;
+    if (mobile || !primed || known.has(a.id) || !parentId || a.archivedAt || !a.workspaceId) return;
     if (Date.now() - new Date(a.createdAt).getTime() > 120_000 || opened.has(parentId)) return;
     if (!isWorkspaceRouteOpen(a.workspaceId)) return;
     opened.add(parentId);
@@ -239,7 +280,9 @@ export function observe(client: PluginClientContext) {
     })
     .catch(() => {});
 
-  const stopExplorer = keepExplorerKanban((workspaceId) => client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" }));
+  const stopExplorer = mobile
+    ? () => {}
+    : keepExplorerKanban((workspaceId) => client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" }));
 
   return () => {
     stopExplorer();

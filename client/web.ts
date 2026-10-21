@@ -7,7 +7,7 @@ declare const document: {
   getElementById(id: string): { remove(): void } | null;
   createElement(tag: string): { id: string; textContent: string };
 };
-declare const window: { location: { pathname: string } };
+declare const window: { location: { pathname: string }; innerWidth: number };
 
 export function providerSvg(provider: string, size: number, color: string) {
   if (Platform.OS !== "web" || !providerPaths[provider]) return null;
@@ -132,4 +132,9 @@ export function keepExplorerKanban(add: (workspaceId: string) => void) {
     observer.disconnect();
     if (timer) clearTimeout(timer);
   };
+}
+
+// Phone-sized web window: behaves like the mobile app (no explorer tabs, no header buttons).
+export function isCompactWeb() {
+  return Platform.OS === "web" && typeof window !== "undefined" && window.innerWidth < 700;
 }

@@ -1,0 +1,17 @@
+import { open, root } from './lib.mjs';
+const { b, p } = await open(390, 844);
+await p.goto(root); await p.waitForTimeout(2500);
+await p.getByLabel('Открыть меню').click(); await p.waitForTimeout(800);
+await p.getByText('Тендер', { exact: true }).first().click(); await p.waitForTimeout(2500);
+await p.screenshot({ path: '/tmp/kbt/m4-pill.png' });
+await p.getByRole('button', { name: 'Канбан' }).first().click(); await p.waitForTimeout(800);
+await p.screenshot({ path: '/tmp/kbt/m5-menu.png' });
+await p.getByText('Канбан чата', { exact: true }).last().click(); await p.waitForTimeout(2500);
+await p.screenshot({ path: '/tmp/kbt/m6-chat-tab.png' });
+await p.goBack().catch(() => {}); await p.waitForTimeout(1500);
+await p.getByLabel('Открыть меню').click().catch(() => {}); await p.waitForTimeout(600);
+await p.getByText('Тендер', { exact: true }).first().click().catch(() => {}); await p.waitForTimeout(2000);
+await p.getByRole('button', { name: 'Канбан' }).first().click(); await p.waitForTimeout(800);
+await p.getByText('Канбан пространства', { exact: true }).last().click(); await p.waitForTimeout(2500);
+await p.screenshot({ path: '/tmp/kbt/m7-board.png' });
+await b.close();
