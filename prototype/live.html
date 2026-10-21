@@ -178,6 +178,19 @@ html,body{margin:0;background:var(--page);color:var(--fg);font:14px/1.35 -apple-
 .ar .pill2{font-size:11.5px;color:var(--fg2);background:#262626;border-radius:999px;padding:1px 8px}
 .ar.more{color:var(--run);font-size:12.5px;padding-left:34px}
 
+.m-acc{width:13px;height:13px;margin-top:2px;background:#a78bfa;color:#1b1b1b;font:800 9px/13px -apple-system,system-ui,sans-serif;text-align:center}
+.kc.acc{border-color:rgba(167,139,250,.5);background:#221f2b}
+.accbox{display:flex;flex-direction:column;gap:7px;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.35);border-radius:8px;padding:7px 8px}
+.accbox .h{font-size:12.5px;color:#cdbcff;font-weight:600}
+.accbox .w{font-size:12px;color:#b8b0d0}
+.accbtns{display:flex;gap:6px}
+.accbtns span{flex:1;text-align:center;font-size:12.5px;border-radius:7px;padding:5px 0;cursor:pointer}
+.accbtns .ok{background:#2e6b4a;color:#fff}.accbtns .back{background:#2a2a2a;color:var(--fg);border:1px solid #3a3a3a}
+.selfchk{display:inline-block;font-size:11px;color:var(--fg2);background:#2a2a2a;border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:1px}
+.hbtn .n2{background:#a78bfa;color:#1b1b1b;font-weight:700;font-size:11px;border-radius:999px;padding:0 6px;line-height:16px}
+.big .acc{font-size:14px;line-height:1.5;color:#ddd2ff;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.38);border-radius:10px;padding:10px 12px}
+.big .acc ul{margin:6px 0 0;padding-left:18px;color:#c9c0e6}
+.cols5{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:12px!important}
 .ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:18px 28px 0;color:var(--fg2);font-size:13px}
 .ctl .btn{cursor:pointer}
 .ctl .btn.on{border-color:var(--run);background:rgba(92,170,246,.15);color:#fff}
@@ -237,7 +250,7 @@ const ic = (n, c='') => `<svg class="ico ${c}" viewBox="0 0 24 24">${I[n]}</svg>
 const chev = (open) => `<svg class="chev ${open?'open':''}" viewBox="0 0 24 24">${I.chev}</svg>`;
 const L = { claude: `<svg class="logo" viewBox="0 0 24 24"><path d="${CLAUDE}"/></svg>`, codex: `<svg class="logo" viewBox="0 0 24 24" fill-rule="evenodd"><path d="${CODEX}"/></svg>` };
 const pv = (p, b) => `<span class="pv">${L[p]}${b ? `<i class="bd bd-${b}">${b==='need'?'!':''}</i>` : ''}</span>`;
-const mini = (s) => s==='done' ? '' : `<i class="mini m-${s}">${s==='need'?'!':''}</i>`;
+const mini = (s) => s==='done' ? '' : `<i class="mini m-${s}">${s==='need'?'!':s==='acc'?'✓':''}</i>`;
 
 function sidebar(sel) {
   const a = (p, t, tm, b, s) => `<div class="row agent ${s?'sel':''}">${pv(p,b)}<span class="ttl">${t}</span><span class="time">${tm}</span></div>`;
@@ -367,15 +380,16 @@ const ST = { view: 'kan', exp: true, archOpen: false, archChat: 'СПАМ ЭЭ',
 let TASKS = [];
 function resetTasks() {
   TASKS = [
-    {id:1, t:'Разбор почты на хабе до amoCRM', col:'q', now:'ждёт очереди, начнёт после тендерного шага', exec:'Разбор почты', chat:'Общий ИИ', tm:'вчера'},
     {id:2, t:'Автозакрытие спама в "Отказ"', col:'q', now:'отложено: решили пока не включать', exec:'Автозакрытие спама', chat:'Тендер', tm:'15:23'},
+    {id:11, t:'Пометка тендера в теме письма', col:'q', now:'ждёт очереди после тендерного шага', exec:'Пометка тендера', chat:'Тендер', tm:'15:30'},
     {id:3, t:'Тендерный шаг в хабе', col:'run', now:'выложен на Opus, жду первое живое письмо-тендер', exec:'Тендерный шаг', chat:'Тендер', tm:'12:20'},
-    {id:4, t:'Виджет "Дебиторка" вместо AMGROUP', col:'run', now:'сверяю вид с оригиналом по снимкам', exec:'Виджет Дебиторка', chat:'Дебиторка', tm:'17:06'},
+    {id:1, t:'Разбор почты на хабе до amoCRM', col:'run', self:true, now:'проверяет сам: прогон на тестовом хабе', exec:'Разбор почты', chat:'Общий ИИ', tm:'16:05'},
     {id:5, t:'Итоги дебиторки в воронке', col:'need', now:'посчитал суммы долга по этапам воронки', need:'какие этапы считать просроченными: все после "Счёт выставлен" или только "Ждём оплату"?', exec:'Итоги дебиторки', chat:'Дебиторка', tm:'16:40'},
-    {id:6, t:'Отчёт по звонкам за октябрь', col:'need', now:'отчёт готов, лежит в outbox', need:'посмотреть и сказать "лей"', exec:'Отчёт по звонкам', chat:'Общий ИИ', tm:'16:52', p:'codex'},
-    {id:7, t:'Тег "Тендер" в amoCRM', col:'done', fresh:true, now:'готово, проверено на живой сделке', exec:'Тег Тендер', chat:'Тендер', tm:'13:05'},
-    {id:8, t:'Причина отказа - обязательное поле', col:'done', now:'готово', exec:'Причина отказа', chat:'Дебиторка', tm:'вчера'},
-    {id:9, t:'Чёрный список: импорт номеров', col:'done', now:'готово', exec:'Чёрный список', chat:'Общий ИИ', tm:'19 окт', p:'codex'},
+    {id:4, t:'Виджет "Дебиторка" вместо AMGROUP', col:'acc', now:'готово и выложено, вид сверен с оригиналом', checked:['исполнитель: вид по снимкам оригинала, сохранение суммы','оркестратор: прошёл виджет руками в карточке сделки'], exec:'Виджет Дебиторка', chat:'Дебиторка', tm:'17:06'},
+    {id:6, t:'Отчёт по звонкам за октябрь', col:'acc', now:'отчёт готов, лежит в outbox', checked:['исполнитель: цифры сверены с onlinePBX','оркестратор: прочитал отчёт целиком'], exec:'Отчёт по звонкам', chat:'Общий ИИ', tm:'16:52', p:'codex'},
+    {id:7, t:'Тег "Тендер" в amoCRM', col:'done', fresh:true, now:'принято тобой, работает на живых сделках', exec:'Тег Тендер', chat:'Тендер', tm:'13:05'},
+    {id:8, t:'Причина отказа - обязательное поле', col:'done', now:'принято', exec:'Причина отказа', chat:'Дебиторка', tm:'вчера'},
+    {id:9, t:'Чёрный список: импорт номеров', col:'done', now:'принято', exec:'Чёрный список', chat:'Общий ИИ', tm:'19 окт', p:'codex'},
   ];
 }
 resetTasks();
@@ -384,17 +398,19 @@ const ARCH = [
   {chat:'Карусель', p:'claude', date:'5 окт', tasks:[['Карусель менеджеров по очереди','Готово'],['Пропуск отпускников','Готово']]},
   {chat:'Чёрный список (старый)', p:'codex', date:'1 окт', tasks:[['Список номеров в amoCRM','Готово'],['Блок звонков в onlinePBX','Готово'],['Импорт из Мегаплана','Не доделано'],['Отчёт по блокировкам','Готово']]},
 ];
-const COLS = [['q','Очередь','#5a5a5a'],['run','В работе','var(--run)'],['need','Нужен ты','var(--warn)'],['done','Готово','var(--ok)']];
-const stOf = (x) => x.col === 'q' ? 'q' : x.col === 'run' ? 'run' : x.col === 'need' ? 'need' : (x.fresh ? 'att' : 'done');
+const COLS = [['q','Очередь','#5a5a5a'],['run','В работе','var(--run)'],['need','Нужен ответ','var(--warn)'],['acc','Ждёт приёмки','#a78bfa'],['done','Готово','var(--ok)']];
+const stOf = (x) => x.col === 'q' ? 'q' : x.col === 'run' ? 'run' : x.col === 'need' ? 'need' : x.col === 'acc' ? 'acc' : (x.fresh ? 'att' : 'done');
 const whoOf = (x, inChat) => ST.reading === 'A' ? (inChat ? `${x.exec} · исполнитель` : `${x.exec} · из чата ${x.chat}`) : `чат ${x.chat}`;
 function cardL(x, inChat) {
-  return `<div class="kc ${ST.flash===x.id?'new':''}" data-card="${x.id}" style="cursor:pointer">
+  return `<div class="kc ${x.col==='acc'?'acc':''} ${ST.flash===x.id?'new':''}" data-card="${x.id}" style="cursor:pointer">
     <div class="t"><span>${x.t}</span>${mini(stOf(x))}</div>
-    ${x.now ? `<div class="now">Сейчас: ${x.now}</div>` : ''}
+    ${x.now ? `<div class="now">Сейчас: ${x.now}${x.self?'<span class="selfchk">самопроверка</span>':''}</div>` : ''}
     ${x.need ? `<div class="need">От тебя: ${x.need}</div>` : ''}
+    ${x.col==='acc' ? `<div class="accbox"><div class="h">Ждёт твоей приёмки</div><div class="w">Проверили исполнитель и оркестратор, осталось твоё слово</div><div class="accbtns"><span class="ok" data-accept="${x.id}">Принять</span><span class="back" data-card="${x.id}">Вернуть</span></div></div>` : ''}
     <div class="ft">${L[x.p||'claude']}<span class="who">${whoOf(x, inChat)}</span><span class="sp"></span><span>${x.tm}</span></div></div>`;
 }
 const needCount = () => TASKS.filter(x => x.col === 'need').length;
+const accCount = () => TASKS.filter(x => x.col === 'acc').length;
 function sidebarL() {
   const a = (t, tm, b) => `<div class="row agent ${ST.view===t?'sel':''}" data-go="${t}" style="cursor:pointer">${pv('claude',b)}<span class="ttl">${t}</span><span class="time">${tm}</span></div>`;
   return `<aside class="side">
@@ -419,7 +435,7 @@ function sidebarL() {
 }
 function topbarL() {
   return `<div class="topbar"><span>ЭкоЭксперт</span><span class="muted">AI OS</span>${ic('dots')}<span class="sp"></span>
-    <span class="hbtn" data-go="kan" style="cursor:pointer">${ic('kan')}Канбан${needCount()?`<span class="n">${needCount()}</span>`:''}</span>${ic('vs')}<span data-exp="toggle" style="cursor:pointer;display:inline-flex">${ic('pr')}</span></div>`;
+    <span class="hbtn" data-go="kan" style="cursor:pointer">${ic('kan')}Канбан${needCount()?`<span class="n" title="вопросы">${needCount()}</span>`:''}${accCount()?`<span class="n2" title="ждут приёмки">${accCount()}</span>`:''}</span>${ic('vs')}<span data-exp="toggle" style="cursor:pointer;display:inline-flex">${ic('pr')}</span></div>`;
 }
 function tabsL() {
   const t = (key, html) => `<div class="tab ${ST.view===key?'on':''}" data-go="${key}" style="cursor:pointer">${html}</div>`;
@@ -436,17 +452,17 @@ function archiveL() {
 function boardL() {
   const n = TASKS.filter(x => x.col !== 'done').length;
   return `<div class="board" style="overflow:auto">
-    <div class="bhead"><h2>ЭкоЭксперт</h2><span class="s">${TASKS.length} задач в 3 чатах · ${needCount()} ждут тебя</span></div>
-    <div class="cols">${COLS.map(([k, name, dot]) => { const list = TASKS.filter(x => x.col === k); return `<div class="col"><div class="colh"><i class="dot" style="background:${dot}"></i>${name}<span class="n">${list.length}</span></div>${list.map(x => cardL(x, false)).join('')}</div>`; }).join('')}</div>
+    <div class="bhead"><h2>ЭкоЭксперт</h2><span class="s">${TASKS.length} задач в 3 чатах · вопросов к тебе: ${needCount()} · ждут твоей приёмки: ${accCount()}</span></div>
+    <div class="cols cols5">${COLS.map(([k, name, dot]) => { const list = TASKS.filter(x => x.col === k); return `<div class="col"><div class="colh"><i class="dot" style="background:${dot}"></i>${name}<span class="n">${list.length}</span></div>${list.map(x => cardL(x, false)).join('')}</div>`; }).join('')}</div>
     ${archiveL()}<div style="height:16px"></div></div>`;
 }
 function explorerL(chat) {
   const mine = TASKS.filter(x => x.chat === chat);
-  const sec = (k, name) => { const l = mine.filter(x => x.col === k); return l.length ? `<div class="sec">${mini(k==='done'?'att':k)}${name}<span class="n">${l.length}</span></div>${l.map(x => cardL(x, true)).join('')}` : ''; };
+  const sec = (k, name) => { const l = mine.filter(x => x.col === k); return l.length ? `<div class="sec" ${k==='acc'?'style="color:#cdbcff"':''}>${mini(k==='done'?'att':k)}${name}<span class="n">${l.length}</span></div>${l.map(x => cardL(x, true)).join('')}` : ''; };
   return `<aside class="exp">
     <div class="exph"><div class="tab">${ic('file')}Файлы</div><div class="tab">${ic('diff')}Изменения</div><div class="tab on">${ic('kan')}Канбан</div><span class="sp"></span><span data-exp="close" style="cursor:pointer;display:inline-flex">${ic('x')}</span></div>
     <div class="expb" style="overflow:auto"><div class="ptitle"><b>${chat}</b><span>${mine.length} карточки этого чата</span></div>
-      ${mine.length ? sec('run','В работе') + sec('need','Нужен ты') + sec('q','Очередь') + sec('done','Готово') : '<div class="now" style="color:var(--fg3);padding:2px">Пока карточек нет. Появятся, когда агент перейдёт к реализации.</div>'}
+      ${mine.length ? sec('acc','Ждёт приёмки') + sec('need','Нужен ответ') + sec('run','В работе') + sec('q','Очередь') + sec('done','Готово') : '<div class="now" style="color:var(--fg3);padding:2px">Пока карточек нет. Появятся, когда агент перейдёт к реализации.</div>'}
     </div></aside>`;
 }
 const CHATS = {
@@ -459,14 +475,16 @@ function chatL(chat) {
 }
 function modalL() {
   const x = TASKS.find(t => t.id === ST.modal); if (!x) return '';
-  const label = {q:'Очередь', run:'В работе', need:'Нужен ты', done:'Готово'}[x.col];
+  const label = {q:'Очередь', run:'В работе', need:'Нужен ответ', acc:'Ждёт твоей приёмки', done:'Готово'}[x.col];
   return `<div class="dim" data-close="1"><div class="big" data-stop="1">
     <div class="top"><span class="status">${mini(stOf(x))}${label}</span><span>ЭкоЭксперт</span><span class="sp"></span><span data-close="1" style="cursor:pointer;display:inline-flex">${ic('x')}</span></div>
     <h3>${x.t}</h3>
     <div class="fld"><div class="k">Сейчас</div><div class="v">${x.now}</div></div>
     ${x.need ? `<div class="fld"><div class="k">От тебя</div><div class="need">${x.need[0].toUpperCase() + x.need.slice(1)}</div></div>
     <div class="reply"><input class="in" id="reply" placeholder="Ответить ${ST.reading==='A'?'исполнителю':'в чат'}..." style="outline:none;font:inherit;color:var(--fg)"><span class="btn pri" data-reply="${x.id}" style="cursor:pointer">${ic('send')}Отправить</span></div>` : ''}
-    <div class="whobox">${pv(x.p||'claude', stOf(x)==='done'?'':stOf(x)==='q'?'':stOf(x))}<div><div class="w1">${ST.reading==='A'?x.exec:'Чат '+x.chat}</div><div class="w2">${ST.reading==='A'?'исполнитель · из чата '+x.chat:'карточка ведётся в этом чате'}</div></div><span class="sp"></span><span class="btn" data-open="${x.chat}" style="cursor:pointer">${ic('open')}Открыть чат</span></div>
+    ${x.col==='acc' ? `<div class="fld"><div class="k">Проверено до тебя</div><div class="acc">Осталось твоё слово.<ul>${x.checked.map(c=>`<li>${c}</li>`).join('')}</ul></div></div>
+    <div class="reply"><input class="in" id="reply" placeholder="Что поправить (для возврата)..." style="outline:none;font:inherit;color:var(--fg)"><span class="btn" data-return="${x.id}" style="cursor:pointer">Вернуть</span><span class="btn" data-accept="${x.id}" style="cursor:pointer;background:#2e6b4a;border-color:#3a8a5e">Принять</span></div>` : ''}
+    <div class="whobox">${pv(x.p||'claude', stOf(x)==='need'?'need':stOf(x)==='run'?'run':stOf(x)==='att'?'att':'')}<div><div class="w1">${ST.reading==='A'?x.exec:'Чат '+x.chat}</div><div class="w2">${ST.reading==='A'?'исполнитель · из чата '+x.chat:'карточка ведётся в этом чате'}</div></div><span class="sp"></span><span class="btn" data-open="${x.chat}" style="cursor:pointer">${ic('open')}Открыть чат</span></div>
   </div></div>`;
 }
 function render() {
@@ -477,10 +495,12 @@ function render() {
   document.querySelectorAll('[data-rd]').forEach(b => b.classList.toggle('on', b.dataset.rd === ST.reading));
 }
 document.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-go],[data-card],[data-arch],[data-archchat],[data-exp],[data-close],[data-reply],[data-open],[data-rd],[data-act],[data-stop]');
+  const el = e.target.closest('[data-accept],[data-return],[data-go],[data-card],[data-arch],[data-archchat],[data-exp],[data-close],[data-reply],[data-open],[data-rd],[data-act],[data-stop]');
   if (!el) return;
   const d = el.dataset;
-  if (d.stop !== undefined && !e.target.closest('[data-close],[data-reply],[data-open]')) return;
+  if (d.stop !== undefined && !e.target.closest('[data-close],[data-reply],[data-open],[data-accept],[data-return]')) return;
+  if (d.accept) { const x = TASKS.find(t => t.id === +d.accept); x.col = 'done'; x.fresh = false; x.now = 'принято тобой'; x.tm = 'сейчас'; ST.modal = null; render(); return; }
+  if (d.return) { const x = TASKS.find(t => t.id === +d.return); const v = (document.getElementById('reply')||{}).value; x.col = 'run'; x.now = 'возвращено тобой: ' + (v || 'есть замечания'); x.tm = 'сейчас'; ST.modal = null; render(); return; }
   if (d.go) { ST.view = d.go; ST.flash = null; }
   else if (d.card) { ST.modal = +d.card; }
   else if (d.arch) { ST.archOpen = !ST.archOpen; }
