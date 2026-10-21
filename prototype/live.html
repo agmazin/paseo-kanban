@@ -467,7 +467,7 @@ Object.assign(I, {
   corner:'<path d="M6 4v7a4 4 0 0 0 4 4h9"/><path d="m15 11 4 4-4 4"/>',
 });
 const ST = { view:'kan', exp:true, archOpen:false, archChat:null, modal:null, reading:'A', auto:false,
-  group:'status', sort:'chat', order:'asc', hideDone:false, details:false, menu:null, collapsed:{}, manual:{} };
+  group:'status', sort:'chat', order:'asc', hideArch:false, details:false, menu:null, collapsed:{}, manual:{} };
 let TASKS = [];
 function resetTasks() {
   TASKS = [
@@ -543,7 +543,7 @@ function menus() {
   if (!ST.menu) return '';
   if (ST.menu === 'view') return `<div class="pop" style="right:22px;top:50px">
     <div class="plabel">Вид</div>
-    <div class="pi" data-toggle="hideDone">${ic('hidedone')}Скрыть готовые${ST.hideDone ? `<span class="ck">${ic('check')}</span>` : ''}</div>
+    <div class="pi" data-toggle="hideArch">${ic('arch')}Скрыть архивные${ST.hideArch ? `<span class="ck">${ic('check')}</span>` : ''}</div>
     <div class="pi" data-toggle="details">${ic('details')}Показать детали${ST.details ? `<span class="ck">${ic('check')}</span>` : ''}</div></div>`;
   const main = `<div class="pop" style="right:62px;top:50px;min-width:340px">
     <div class="pi ${ST.menu==='groupBy'?'hl':''}" data-menu="groupBy">${ic('groupby')}Группировать по<span class="v">${groupName()} ${ic('right')}</span></div>
@@ -556,15 +556,15 @@ function menus() {
   return main;
 }
 function columnsDef() {
-  const live = TASKS.filter(x => !(ST.hideDone && x.col === 'done'));
-  const arch = ATASKS.filter(x => !(ST.hideDone && x.col === 'done'));
+  const live = TASKS;
+  const arch = ST.hideArch ? [] : ATASKS;
   let keys;
-  if (ST.group === 'status') keys = COLS.map(c => c[0]).filter(k => !(ST.hideDone && k === 'done'));
+  if (ST.group === 'status') keys = COLS.map(c => c[0]);
   else if (ST.group === 'prov') keys = ['Claude', 'Codex'];
   else if (ST.group === 'date') keys = ['Сегодня', 'Вчера', 'Раньше'];
   else keys = [...new Set(live.map(x => fieldOf(x, ST.group)))].sort((a, b) => a.localeCompare(b, 'ru'));
   const cols = keys.map(k => ({ key: k, name: labelOf(ST.group, k), list: live.filter(x => fieldOf(x, ST.group) === k), alist: arch.filter(x => fieldOf(x, ST.group) === k) }));
-  if (ST.group === 'chat' || ST.group === 'exec') cols.push({ key: 'archchats', name: 'Архивные чаты', list: [], alist: [], archChats: arch });
+  if (!ST.hideArch && (ST.group === 'chat' || ST.group === 'exec')) cols.push({ key: 'archchats', name: 'Архивные чаты', list: [], alist: [], archChats: arch });
   return cols;
 }
 function archColumn(c) {
@@ -691,7 +691,7 @@ document.addEventListener('click', (e) => {
     ST.auto = true; ST.view = 'Тендер'; ST.exp = false; render();
     setTimeout(() => { ST.exp = true; render(); }, 700); return;
   }
-  else if (d.act === 'reset') { resetTasks(); ST.openSubs = []; ST.queue = {}; ST.msgs = {}; Object.assign(ST, { view:'kan', exp:true, archOpen:false, archChat:null, modal:null, auto:false, group:'status', sort:'chat', order:'asc', hideDone:false, details:false, menu:null, collapsed:{}, manual:{} }); }
+  else if (d.act === 'reset') { resetTasks(); ST.openSubs = []; ST.queue = {}; ST.msgs = {}; Object.assign(ST, { view:'kan', exp:true, archOpen:false, archChat:null, modal:null, auto:false, group:'status', sort:'chat', order:'asc', hideArch:false, details:false, menu:null, collapsed:{}, manual:{} }); }
   render();
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'subin') { subSend(+e.target.dataset.sub, e.target.value.trim(), false); } });
