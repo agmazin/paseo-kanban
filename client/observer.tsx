@@ -11,7 +11,7 @@ import { accept, sendBack } from "../shared/contracts";
 import { columnOf, parentOf, STATUS, type Col } from "../shared/model";
 import { allAgents } from "./data";
 import { palette, T } from "./ui";
-import { isWorkspaceRouteOpen } from "./web";
+import { isWorkspaceRouteOpen, keepExplorerKanban } from "./web";
 
 const CHAT_PANEL = "chat";
 const BOARD_PANEL = "board";
@@ -239,7 +239,10 @@ export function observe(client: PluginClientContext) {
     })
     .catch(() => {});
 
+  const stopExplorer = keepExplorerKanban((workspaceId) => client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" }));
+
   return () => {
+    stopExplorer();
     lifetime.abort();
     for (const { regs } of pills.values()) regs.forEach((r) => r.remove());
     pills.clear();

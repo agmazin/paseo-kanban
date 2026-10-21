@@ -200,14 +200,13 @@ function Menus({ menu, setMenu, prefs, update, p }: { menu: Menu; setMenu(m: Men
 export function Board({ workspaceId, theme, host, navigation }: PluginWorkspacePanelProps) {
   const p = palette(theme);
   const ws = useWorkspace(workspaceId, (w) => ({ name: w.name, title: w.title }));
-  const { cards, loading } = useCards(host.id);
+  const { cards } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
   const toggle = useToggle(prefs, update);
   const [menu, setMenu] = useState<Menu>(null);
   useEffect(() => installScrollbarStyle(), []);
   const cols = useMemo(() => columns(cards.filter((c) => c.workspaceId === workspaceId), prefs), [cards, prefs, workspaceId]);
   const open: Open = (c) => navigation?.openAgent({ agentId: c.id });
-  const total = cards.filter((c) => c.workspaceId === workspaceId).length;
   return (
     <View testID="kanban-board" style={{ flex: 1, backgroundColor: p.bg, paddingTop: 16, paddingLeft: 22 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10, paddingRight: 22 }}>
@@ -225,11 +224,6 @@ export function Board({ workspaceId, theme, host, navigation }: PluginWorkspaceP
         />
         <ToolButton testID="kanban-view-button" icon="Ellipsis" label="Вид" active={menu === "view"} onPress={() => setMenu(menu === "view" ? null : "view")} p={p} />
       </View>
-      {!loading && total === 0 ? (
-        <T color={p.fg3} size={13} lines={3} style={{ paddingRight: 22 }}>
-          Карточек пока нет. Карточка - это подагент-исполнитель, которого агент чата заводит под задачу.
-        </T>
-      ) : (
         <ScrollView
           testID="kanban-cols"
           horizontal
@@ -258,7 +252,6 @@ export function Board({ workspaceId, theme, host, navigation }: PluginWorkspaceP
             </View>
           ))}
         </ScrollView>
-      )}
       {menu ? (
         <Pressable
           accessibilityLabel="Закрыть меню"
@@ -294,28 +287,19 @@ export function ChatBoard({ workspaceId, theme, host, navigation }: PluginWorksp
   const live = mine.filter((c) => !c.archived);
   const arch = mine.filter((c) => c.archived);
   const open: Open = (c) => navigation?.openAgent({ agentId: c.id });
-  const order = [...CHAT_ORDER];
   const card = (c: Card) => (
     <DetailedCard key={c.id} card={c} inChat showStatus={false} details={prefs.details} hostId={host.id} onPress={() => open(c)} p={p} />
   );
   return (
-    <ScrollView testID="kanban-chat" style={{ flex: 1, backgroundColor: p.bg }} contentContainerStyle={{ padding: 14 }}>
-      {chat ? (
-        <T color={p.fg3} size={12} style={{ paddingHorizontal: 2, paddingBottom: 4 }}>
-          {`Чат ${chat.title || "без названия"}`}
-        </T>
-      ) : null}
-      {!loading && mine.length === 0 ? (
-        <T color={p.fg3} size={12.5} lines={3} style={{ paddingHorizontal: 2, paddingVertical: 4 }}>
-          Пока карточек нет. Появятся, когда агент перейдёт к реализации.
-        </T>
-      ) : null}
-      {order.map((col) => {
+    <ScrollView testID="kanban-chat" style={{ flex: 1 }} contentContainerStyle={{ padding: 14 }}>
+      <T color={p.fg3} size={12} style={{ paddingHorizontal: 2, paddingBottom: 4 }}>
+        {chat ? `Чат ${chat.title || "без названия"}` : "Выберите вкладку чата"}
+      </T>
+      {CHAT_ORDER.map((col) => {
         const list = sortCards(
           live.filter((c) => c.col === col),
           prefs,
         );
-        if (!list.length) return null;
         const key = `p|${col}`;
         const isOpen = !prefs.toggled[key];
         return (
@@ -325,7 +309,12 @@ export function ChatBoard({ workspaceId, theme, host, navigation }: PluginWorksp
           </View>
         );
       })}
-      {arch.length && !prefs.hideArch ? (
+      {!loading && chat && mine.length === 0 ? (
+        <T color={p.fg3} size={12} lines={3} style={{ paddingHorizontal: 2, paddingTop: 8 }}>
+          Карточки появятся, когда агент чата заведёт исполнителя под задачу.
+        </T>
+      ) : null}
+      {arch.length > 0 && !prefs.hideArch ? (
         <View>
           <GroupHeader label="Архив" count={arch.length} open={!!prefs.toggled["p|arch"]} archive onPress={() => toggle("p|arch")} p={p} />
           {prefs.toggled["p|arch"] ? sortCards(arch, prefs).map(card) : null}

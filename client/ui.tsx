@@ -9,33 +9,44 @@ import { shortDate, STATUS, type Card, type Col } from "../shared/model";
 export type Theme = PluginWorkspacePanelProps["theme"];
 const font = "-apple-system, BlinkMacSystemFont, SF Pro Text, Segoe UI, system-ui, sans-serif";
 
-// Dark values are measured from the approved mockup; light themes use host tokens.
+function blend(fg: string, bg: string, amount: number) {
+  const hex = (c: string) => (/^#[\da-f]{6}$/i.test(c) ? [1, 3, 5].map((i) => parseInt(c.slice(i, i + 2), 16)) : null);
+  const a = hex(fg),
+    b = hex(bg);
+  return a && b
+    ? `#${a.map((v, i) => Math.round(v * amount + b[i] * (1 - amount)).toString(16).padStart(2, "0")).join("")}`
+    : fg;
+}
+
+// Every surface comes from the host theme: Paseo's dark grays are slightly green,
+// neutral mockup grays read as dirty red next to native chrome.
 export function palette(theme: Theme) {
   const c = theme.colors;
   const dark = parseInt(c.surface0.slice(1, 3), 16) < 128;
+  const bg = c.surface0;
+  const menu = c.surface2;
   return {
     dark,
-    bg: dark ? "#1b1b1b" : c.surface0,
-    card: dark ? "#232323" : c.surface1,
-    cardHover: dark ? "#272727" : c.surface2,
-    cardLine: dark ? "#2d2d2d" : c.border,
-    line: dark ? "#2a2a2a" : c.border,
+    bg,
+    card: c.surface1,
+    cardHover: c.surface2,
+    cardLine: blend(c.foreground, c.surface1, dark ? 0.045 : 0.08),
+    line: c.border,
     fg: c.foreground,
-    fg2: dark ? "#a6a6a6" : c.foregroundMuted,
-    fg3: dark ? "#6f6f6f" : c.foregroundMuted,
-    group: dark ? "#d0d0d0" : c.foreground,
-    own: dark ? "#c4c4c4" : c.foreground,
-    ownLogo: dark ? "#c9c9c9" : c.foregroundMuted,
-    exeLogo: dark ? "#8d8d8d" : c.foregroundMuted,
-    corner: dark ? "#555555" : c.foregroundMuted,
-    menu: dark ? "#232323" : c.surface1,
-    menuLine: dark ? "#343434" : c.border,
-    menuHover: dark ? "#2c2c2c" : c.surface2,
-    button: dark ? "#262626" : c.surface2,
-    selected: dark ? "#6d9df5" : c.accent,
-    ok: dark ? "#2e6b4a" : c.statusSuccess,
+    fg2: c.foregroundMuted,
+    fg3: blend(c.foregroundMuted, bg, 0.62),
+    group: blend(c.foreground, bg, 0.85),
+    own: blend(c.foreground, bg, 0.78),
+    ownLogo: blend(c.foreground, bg, 0.8),
+    exeLogo: blend(c.foregroundMuted, bg, 0.75),
+    corner: blend(c.foregroundMuted, bg, 0.4),
+    menu,
+    menuLine: blend(c.foreground, menu, 0.06),
+    menuHover: blend(c.foreground, menu, 0.05),
+    button: c.surface2,
+    selected: c.foreground,
     dots: {
-      q: "#6b6b6b",
+      q: blend(c.foregroundMuted, bg, 0.45),
       run: dark ? "#5caaf6" : "#268ae0",
       need: dark ? "#f7796d" : "#f12e2f",
       acc: dark ? "#db932e" : "#b37824",

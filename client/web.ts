@@ -89,3 +89,47 @@ export function fadeStyle(tint: string, top: number) {
   if (Platform.OS !== "web") return null;
   return { backgroundImage: `linear-gradient(to bottom, rgba(${tint},${top}), rgba(${tint},0))` } as object;
 }
+
+interface HostNode {
+  getAttribute(name: string): string | null;
+  getClientRects(): { length: number };
+  querySelector(selector: string): HostNode | null;
+  querySelectorAll(selector: string): Iterable<HostNode>;
+  click(): void;
+}
+const KANBAN_TAB = '[data-testid^="workspace-tab-plugin_"][data-testid*="paseo-kanban"]';
+// Keeps "Канбан" beside Files and Changes: when the explorer shows a workspace
+// without it, the panel is added and the previously selected explorer tab is
+// selected again, so the user still decides what the right panel shows.
+export function keepExplorerKanban(add: (workspaceId: string) => void) {
+  if (Platform.OS !== "web" || typeof MutationObserver === "undefined") return () => {};
+  const doc = document as unknown as HostNode & { body: unknown };
+  let seen = "";
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const read = () => {
+    timer = undefined;
+    const side = [...doc.querySelectorAll('[data-testid="workspace-explorer-sidebar"]')].find((n) => n.getClientRects().length > 0);
+    const parts = window.location.pathname.split("/");
+    const workspaceId = parts[parts.indexOf("workspace") + 1] || "";
+    const key = side && parts.includes("workspace") ? workspaceId : "";
+    if (key === seen) return;
+    seen = key;
+    if (!side || !key || side.querySelector(KANBAN_TAB)) return;
+    const previous = side.querySelector('[data-testid^="workspace-tab-"][aria-selected="true"]')?.getAttribute("data-testid");
+    add(key);
+    if (!previous) return;
+    setTimeout(() => {
+      const again = [...doc.querySelectorAll('[data-testid="workspace-explorer-sidebar"]')].find((n) => n.getClientRects().length > 0);
+      again?.querySelector(`[data-testid="${previous}"]`)?.click();
+    }, 80);
+  };
+  const observer = new MutationObserver(() => {
+    if (!timer) timer = setTimeout(read, 150);
+  });
+  observer.observe(doc.body, { subtree: true, childList: true });
+  read();
+  return () => {
+    observer.disconnect();
+    if (timer) clearTimeout(timer);
+  };
+}
