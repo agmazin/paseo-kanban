@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, View } from "react-native";
 import { usePaseo, useRpc, useWorkspace, type PluginAgentPanelProps, type PluginScreenProps, type PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
-import { lastBoardWorkspace, rememberWorkspace, useFocusedChat } from "./focus";
+import { lastBoardWorkspace, rememberWorkspace } from "./focus";
 import { useQuery } from "@tanstack/react-query";
 import { lastReply } from "../shared/contracts";
 import {
@@ -202,10 +202,9 @@ type Nav = PluginWorkspacePanelProps["navigation"];
 type ViewProps = { workspaceId: string; theme: Theme; host: { id: string }; navigation?: Nav };
 
 export function Board(props: PluginWorkspacePanelProps) {
-  const focus = useFocusedChat(props.workspaceId);
   const ws = useWorkspace(props.workspaceId, (w) => ({ name: w.name, title: w.title }));
   useEffect(() => rememberWorkspace(props.workspaceId), [props.workspaceId]);
-  return <BoardView {...props} title={ws?.title || ws?.name || "Канбан"} focusChatId={props.layout.compact ? focus : null} />;
+  return <BoardView {...props} title={ws?.title || ws?.name || "Канбан"} />;
 }
 
 // Left menu entry: the workspace board as a screen with workspace chips (reachable on phones too).
@@ -244,17 +243,14 @@ export function BoardScreen({ theme, host, navigation, params }: PluginScreenPro
           theme={theme}
           host={host}
           navigation={navigation}
-          focusChatId={null}
         />
       ) : null}
     </View>
   );
 }
 
-function BoardView({ workspaceId, title, theme, host, navigation, focusChatId }: ViewProps & { title: string; focusChatId: string | null }) {
+function BoardView({ workspaceId, title, theme, host, navigation }: ViewProps & { title: string }) {
   const p = palette(theme);
-  const [mode, setMode] = useState<"chat" | "all">(focusChatId ? "chat" : "all");
-  useEffect(() => setMode(focusChatId ? "chat" : "all"), [focusChatId]);
   const { cards } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
   const toggle = useToggle(prefs, update);
@@ -262,7 +258,6 @@ function BoardView({ workspaceId, title, theme, host, navigation, focusChatId }:
   useEffect(() => installScrollbarStyle(), []);
   const cols = useMemo(() => columns(cards.filter((c) => c.workspaceId === workspaceId), prefs), [cards, prefs, workspaceId]);
   const open: Open = (c) => navigation?.openAgent({ agentId: c.id });
-  const chatTitle = focusChatId ? cards.find((c) => c.owner?.id === focusChatId)?.owner?.title : null;
   return (
     <View testID="kanban-board" style={{ flex: 1, backgroundColor: p.bg, paddingTop: 16, paddingLeft: 22 }}>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10, paddingRight: 22 }}>
@@ -280,33 +275,6 @@ function BoardView({ workspaceId, title, theme, host, navigation, focusChatId }:
         />
         <ToolButton testID="kanban-view-button" icon="Ellipsis" label="Вид" active={menu === "view"} onPress={() => setMenu(menu === "view" ? null : "view")} p={p} />
       </View>
-      {focusChatId ? (
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 10, paddingRight: 22 }}>
-          {(
-            [
-              ["chat", chatTitle ? `Чат ${chatTitle}` : "Этот чат"],
-              ["all", "Всё пространство"],
-            ] as const
-          ).map(([key, label]) => (
-            <Pressable
-              key={key}
-              accessibilityRole="button"
-              accessibilityLabel={label}
-              onPress={() => setMode(key)}
-              style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999, backgroundColor: mode === key ? p.button : "transparent" }}
-            >
-              <T color={mode === key ? p.fg : p.fg2} size={13.5}>
-                {label}
-              </T>
-            </Pressable>
-          ))}
-        </View>
-      ) : null}
-      {focusChatId && mode === "chat" ? (
-        <View style={{ flex: 1, marginLeft: -14 }}>
-          <ChatView workspaceId={workspaceId} theme={theme} host={host} navigation={navigation} fixedAgentId={focusChatId} />
-        </View>
-      ) : (
           <ScrollView
             testID="kanban-cols"
             horizontal
@@ -335,7 +303,6 @@ function BoardView({ workspaceId, title, theme, host, navigation, focusChatId }:
               </View>
             ))}
           </ScrollView>
-      )}
       {menu ? (
         <Pressable
           accessibilityLabel="Закрыть меню"
@@ -358,7 +325,14 @@ export function ChatBoardTab({ agentId, workspaceId, theme, host, navigation }: 
   return <ChatView workspaceId={workspaceId} theme={theme} host={host} navigation={navigation} fixedAgentId={agentId} />;
 }
 
-function ChatView({ workspaceId, theme, host, navigation, fixedAgentId }: ViewProps & { fixedAgentId?: string }) {
+export function ChatView({
+  workspaceId,
+  theme,
+  host,
+  navigation,
+  fixedAgentId,
+  onOpenCard,
+}: ViewProps & { fixedAgentId?: string; onOpenCard?: (card: Card) => void }) {
   const p = palette(theme);
   const { cards, agents, loading } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
@@ -380,7 +354,7 @@ function ChatView({ workspaceId, theme, host, navigation, fixedAgentId }: ViewPr
   const mine = chatId ? cards.filter((c) => c.owner?.id === chatId) : [];
   const live = mine.filter((c) => !c.archived);
   const arch = mine.filter((c) => c.archived);
-  const open: Open = (c) => navigation?.openAgent({ agentId: c.id });
+  const open: Open = (c) => (onOpenCard ? onOpenCard(c) : navigation?.openAgent({ agentId: c.id }));
   const card = (c: Card) => (
     <DetailedCard key={c.id} card={c} inChat showStatus={false} details={prefs.details} hostId={host.id} onPress={() => open(c)} p={p} />
   );

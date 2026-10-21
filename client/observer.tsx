@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Platform, Pressable, TextInput, View } from "react-native";
 import type {
+  PluginButtonBehavior,
   PluginButtonContentProps,
   PluginButtonIconProps,
   PluginButtonRegistration,
@@ -10,7 +11,7 @@ import type { PaseoAgent } from "@getpaseo/client";
 import { accept, sendBack } from "../shared/contracts";
 import { columnOf, parentOf, STATUS, type Col } from "../shared/model";
 import { allAgents } from "./data";
-import { focusChat } from "./focus";
+import { overlayFor } from "./overlay";
 import { palette, T } from "./ui";
 import { isCompactWeb, isWorkspaceRouteOpen, keepExplorerKanban } from "./web";
 
@@ -129,12 +130,11 @@ export function observe(client: PluginClientContext) {
 
   // Phones have no explorer tabs and no plugin header buttons: every chat gets a "Канбан" pill instead.
   const mobile = Platform.OS !== "web" || isCompactWeb();
-  // One "Канбан" tab per workspace on phones: it shows the chat the user came from, with a switch to the whole workspace.
-  const openChat = (workspaceId: string, chatId: string) => {
-    if (!mobile) return client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" });
-    focusChat(workspaceId, chatId);
-    client.openPanel(BOARD_PANEL, { workspaceId });
-  };
+  // Phones: the chat kanban opens as a window over the chat (pill popover), not as a tab.
+  const chatBehavior = (workspaceId: string, chatId: string): PluginButtonBehavior =>
+    mobile
+      ? { kind: "popover", Content: overlayFor(client, workspaceId, chatId) }
+      : { kind: "action", onPress: () => client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" }) };
 
   const syncPills = (a: PaseoAgent) => {
     const parentId = parentOf(a);
@@ -154,7 +154,7 @@ export function observe(client: PluginClientContext) {
               title: "Канбан чата",
               icon: "SquareKanban",
               label: "Канбан",
-              behavior: { kind: "action", onPress: () => openChat(workspaceId, a.id) },
+              behavior: chatBehavior(workspaceId, a.id),
             },
           }),
         ],
@@ -181,10 +181,7 @@ export function observe(client: PluginClientContext) {
           title: "Канбан чата",
           icon: DOTS[col],
           label: STATUS[col],
-          behavior: {
-            kind: "action",
-            onPress: () => openChat(workspaceId, parentId),
-          },
+          behavior: chatBehavior(workspaceId, parentId),
         },
       }),
     ];
