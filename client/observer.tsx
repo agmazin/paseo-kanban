@@ -33,7 +33,11 @@ const DOTS = Object.fromEntries((["q", "run", "need", "acc", "done"] as Col[]).m
   ReturnType<typeof dotIcon>
 >;
 
-function returnForm(client: PluginClientContext, agentId: string) {
+type FormText = { hint: string; placeholder: string; button: string; action: string };
+const RETURN: FormText = { hint: "Что поправить - уйдёт исполнителю сообщением", placeholder: "Замечания", button: "Вернуть", action: "Вернуть в работу" };
+const REPLY: FormText = { hint: "Сообщение исполнителю", placeholder: "Ответ", button: "Отправить", action: "Отправить исполнителю" };
+
+function returnForm(client: PluginClientContext, agentId: string, copy: FormText = RETURN) {
   return function ReturnForm({ theme, close }: PluginButtonContentProps) {
     const p = palette(theme);
     const [text, setText] = useState("");
@@ -54,14 +58,14 @@ function returnForm(client: PluginClientContext, agentId: string) {
     return (
       <View style={{ width: 340, padding: 4, gap: 10 }}>
         <T color={p.fg2} size={12.5}>
-          Что поправить - уйдёт исполнителю сообщением
+          {copy.hint}
         </T>
         <TextInput
           autoFocus
           multiline
           value={text}
           onChangeText={setText}
-          placeholder="Замечания"
+          placeholder={copy.placeholder}
           placeholderTextColor={p.fg3}
           style={{
             minHeight: 72,
@@ -81,7 +85,7 @@ function returnForm(client: PluginClientContext, agentId: string) {
         ) : null}
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Вернуть в работу"
+          accessibilityLabel={copy.action}
           disabled={!text.trim() || busy}
           onPress={submit}
           style={{
@@ -93,7 +97,7 @@ function returnForm(client: PluginClientContext, agentId: string) {
           }}
         >
           <T color={text.trim() && !busy ? theme.colors.accentForeground : p.fg3} size={13.5}>
-            {busy ? "Отправляю" : "Вернуть"}
+            {busy ? "Отправляю" : copy.button}
           </T>
         </Pressable>
       </View>
@@ -168,7 +172,9 @@ export function observe(client: PluginClientContext) {
     }
     const col = columnOf(a, agents.get(parentId));
     const canAccept = col === "acc";
-    const sig = `${col}|${canAccept}`;
+    // Phones show executors as a sheet without a composer: a pill writes to the executor instead.
+    const canReply = mobile && !canAccept && col !== "run";
+    const sig = `${col}|${canAccept}|${canReply}`;
     if (old?.sig === sig) return;
     old?.regs.forEach((r) => r.remove());
     const workspaceId = a.workspaceId;
@@ -207,6 +213,20 @@ export function observe(client: PluginClientContext) {
             icon: "Undo2",
             label: "Вернуть",
             behavior: { kind: "popover", Content: returnForm(client, a.id) },
+          },
+        }),
+      );
+    if (canReply)
+      regs.push(
+        client.addComposerPill({
+          id: "reply",
+          workspaceId,
+          agentId: a.id,
+          button: {
+            title: "Написать исполнителю",
+            icon: "MessageSquare",
+            label: col === "need" ? "Ответить" : "Написать",
+            behavior: { kind: "popover", Content: returnForm(client, a.id, REPLY) },
           },
         }),
       );

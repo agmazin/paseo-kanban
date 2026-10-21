@@ -43,12 +43,16 @@
 0.1.9 (22.10.2026): лист на телефоне плотнее - без подписи "Чат ...", карточки по краю заголовка листа, плотнее заголовки групп, высота по содержимому (не больше 80% экрана).
 0.1.10: высота листа снова постоянная, 80% экрана, при любом числе карточек (Александр: "она всегда должна быть одна").
 
+0.1.11 (22.10.2026): на телефоне Paseo открывает исполнителя листом без поля ввода (полный диалог - кнопка "Открыть во
+вкладке"). Поэтому у исполнителя на телефоне пилюля "Ответить" ("Нужен ответ") или "Написать" (очередь, готово):
+поле ввода поверх листа, сообщение уходит исполнителю. У работающего исполнителя пилюли нет.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.10 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.1.11 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

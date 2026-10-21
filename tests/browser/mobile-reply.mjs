@@ -1,0 +1,14 @@
+import { open, root } from './lib.mjs';
+const { b, p } = await open(390, 844);
+await p.goto(root); await p.waitForTimeout(2500);
+await p.getByLabel('Открыть меню').click(); await p.waitForTimeout(800);
+await p.getByText('Тендер', { exact: true }).first().click(); await p.waitForTimeout(2500);
+await p.getByRole('button', { name: 'Канбан чата' }).first().click(); await p.waitForTimeout(2000);
+await p.getByTestId('kanban-card-f22524cb-b727-4449-a416-1ddb379a4c13').click(); await p.waitForTimeout(2500);
+await p.screenshot({ path: '/tmp/kbt/m19-sheet.png' });
+await p.getByRole('button', { name: 'Написать исполнителю' }).last().click(); await p.waitForTimeout(1000);
+await p.screenshot({ path: '/tmp/kbt/m20-reply.png' });
+await p.getByPlaceholder('Ответ').last().fill('Решение: не включаем. Ответь одним словом: понял');
+await p.getByRole('button', { name: 'Отправить исполнителю' }).last().click(); await p.waitForTimeout(6000);
+await p.screenshot({ path: '/tmp/kbt/m21-sent.png' });
+await b.close();
