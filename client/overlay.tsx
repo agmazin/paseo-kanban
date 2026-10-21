@@ -4,30 +4,12 @@ import type { PluginButtonContentProps, PluginClientContext, PluginScreenProps }
 import { ChatView } from "./board";
 import { palette, T } from "./ui";
 
-// Phone: the chat kanban opens over the chat; the "Чат с агентом" tab just closes the window.
+// Phone: the chat kanban opens as a sheet over the chat; swiping it down returns to the chat.
 export function overlayFor(client: PluginClientContext, workspaceId: string, chatId: string) {
   return function KanbanOverlay({ theme, host, close }: PluginButtonContentProps) {
-    const p = palette(theme);
     const height = Math.round(Dimensions.get("window").height * 0.8);
-    const tab = (label: string, active: boolean, onPress?: () => void) => (
-      <Pressable
-        accessibilityRole="tab"
-        accessibilityLabel={label}
-        accessibilityState={{ selected: active }}
-        onPress={onPress}
-        style={{ paddingHorizontal: 14, paddingVertical: 7, borderRadius: 999, backgroundColor: active ? p.button : "transparent" }}
-      >
-        <T color={active ? p.fg : p.fg2} size={14}>
-          {label}
-        </T>
-      </Pressable>
-    );
     return (
       <View testID="kanban-overlay" style={{ height, width: "100%" }}>
-        <View style={{ flexDirection: "row", gap: 6, paddingHorizontal: 10, paddingTop: 4, paddingBottom: 6 }}>
-          {tab("Чат с агентом", false, close)}
-          {tab("Канбан", true)}
-        </View>
         <ChatView
           workspaceId={workspaceId}
           theme={theme}
