@@ -212,6 +212,7 @@ html,body{margin:0;background:var(--page);color:var(--fg);font:14px/1.35 -apple-
 .pi .v{margin-left:auto;color:var(--fg2);font-size:13px;display:inline-flex;align-items:center;gap:4px}.pi .v .ico{width:13px;height:13px}
 .pi.sel{color:#6d9df5}.pi .ck{margin-left:auto;color:#6d9df5;display:inline-flex}.pi .ck .ico{width:16px;height:16px}
 .big .top{font-size:13px}
+.pi.hl{background:#2c2c2c}.gh2.archg{color:var(--fg3)}
 .ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:18px 28px 0;color:var(--fg2);font-size:13px}
 .ctl .btn{cursor:pointer}
 .ctl .btn.on{border-color:var(--run);background:rgba(92,170,246,.15);color:#fff}
@@ -425,9 +426,11 @@ Object.assign(I, {
   hidedone:'<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 3 3 5-6"/>',
   details:'<path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="17" r="2.5"/>',
   check:'<path d="m5 12 5 5 9-10"/>',
+  groupby:'<rect x="4" y="5" width="16" height="10" rx="3"/><path d="M4 19h16"/>',
+  right:'<path d="m9 6 6 6-6 6"/>',
 });
 const ST = { view:'kan', exp:true, archOpen:false, archChat:null, modal:null, reading:'A', auto:false,
-  sort:'chat', order:'asc', hideDone:false, details:false, menu:null, collapsed:{}, manual:{} };
+  group:'status', sort:'chat', order:'asc', hideDone:false, details:false, menu:null, collapsed:{}, manual:{} };
 let TASKS = [];
 function resetTasks() {
   TASKS = [
@@ -445,36 +448,58 @@ function resetTasks() {
   ];
 }
 resetTasks();
-const ARCH = [
-  {chat:'СПАМ ЭЭ', p:'claude', date:'12 окт', tasks:['Метка спама в хабе - готово','Причина "Спам" в amoCRM - готово','Чистка старых спам-сделок - не доделано']},
-  {chat:'Карусель', p:'claude', date:'5 окт', tasks:['Карусель менеджеров по очереди - готово','Пропуск отпускников - готово']},
-  {chat:'Чёрный список (старый)', p:'codex', date:'1 окт', tasks:['Список номеров в amoCRM - готово','Блок звонков в onlinePBX - готово','Импорт из Мегаплана - не доделано','Отчёт по блокировкам - готово']},
+const ATASKS = [
+  {id:101, arch:true, col:'done', t:'Метка спама в хабе - работает', chat:'СПАМ ЭЭ', exec:'Метка спама', c:-5, u:-3, tm:'12 окт', now:'Чат в архиве.'},
+  {id:102, arch:true, col:'done', t:'Причина "Спам" в amoCRM - работает', chat:'СПАМ ЭЭ', exec:'Причина Спам', c:-5, u:-3, tm:'12 окт', now:'Чат в архиве.'},
+  {id:103, arch:true, col:'q', t:'Чистка старых спам-сделок - не начата, чат закрыт', chat:'СПАМ ЭЭ', exec:'Чистка спама', c:-5, u:-4, tm:'12 окт', now:'Чат в архиве.'},
+  {id:104, arch:true, col:'done', t:'Карусель менеджеров по очереди - работает', chat:'Карусель', exec:'Карусель', c:-8, u:-6, tm:'5 окт', now:'Чат в архиве.'},
+  {id:105, arch:true, col:'done', t:'Пропуск отпускников в карусели - работает', chat:'Карусель', exec:'Пропуск отпускников', c:-8, u:-6, tm:'5 окт', now:'Чат в архиве.'},
+  {id:106, arch:true, col:'run', t:'Импорт чёрного списка из Мегаплана - брошен на середине', chat:'Чёрный список (старый)', exec:'Импорт из Мегаплана', c:-10, u:-9, tm:'1 окт', p:'codex', now:'Чат в архиве.'},
+  {id:107, arch:true, col:'acc', t:'Отчёт по блокировкам - не принят, чат закрыт', chat:'Чёрный список (старый)', exec:'Отчёт по блокировкам', c:-10, u:-9, tm:'1 окт', p:'codex', now:'Чат в архиве.', checked:['исполнитель: проверил выгрузку']},
+  {id:108, arch:true, col:'done', t:'Блок звонков в onlinePBX - работает', chat:'Чёрный список (старый)', exec:'Блок звонков', c:-10, u:-9, tm:'1 окт', p:'codex', now:'Чат в архиве.'},
 ];
 const COLS = [['q','Очередь'],['run','В работе'],['need','Нужен ответ'],['acc','Ждёт приёмки'],['done','Готово']];
-const SORTS = [['manual','Произвольно'],['u','Дата изменения'],['c','Дата создания'],['t','Название'],['chat','Чат'],['exec','Исполнитель']];
+const SORTS = [['manual','Произвольно'],['u','Дата изменения'],['c','Дата создания'],['t','Название'],['status','Статус'],['chat','Агент'],['exec','Исполнитель']];
+const GROUPS = [['status','Статус'],['chat','Агент'],['exec','Исполнитель'],['prov','Нейросеть'],['date','Дата изменения']];
+const groupName = () => GROUPS.find(g => g[0] === ST.group)[1];
+const STATUS = Object.fromEntries(COLS);
+const fieldOf = (x, f) => f === 'status' ? x.col : f === 'prov' ? (x.p === 'codex' ? 'Codex' : 'Claude') : f === 'date' ? (/^\d\d:\d\d$|сейчас/.test(x.tm) ? 'Сегодня' : x.tm === 'вчера' ? 'Вчера' : 'Раньше') : x[f];
+const labelOf = (f, v) => f === 'status' ? STATUS[v] : v;
 const sortName = () => SORTS.find(s => s[0] === ST.sort)[1];
 const ownerOf = (x) => ST.reading === 'A' ? x.exec : x.chat;
-function meta(x, inChat) {
-  if (ST.reading === 'B') return `${inChat ? '' : x.chat + ' · '}${x.tm}`;
-  return inChat ? `${x.exec} · ${x.tm}` : (ST.sort === 'chat' ? `${x.exec} · ${x.tm}` : `${x.chat} · ${x.tm}`);
+function meta(x, inChat, sub) {
+  const parts = [];
+  if (!inChat && ST.group !== 'status' && sub !== 'status') parts.push(STATUS[x.col]);
+  if (ST.reading === 'A') { if (inChat || ST.group === 'chat' || sub === 'chat') parts.push(x.exec); else if (ST.group !== 'exec' && sub !== 'exec') parts.push(x.exec + ' · из чата ' + x.chat); else parts.push(x.chat); }
+  else if (!inChat && ST.group !== 'chat' && sub !== 'chat') parts.push(x.chat);
+  parts.push(x.tm);
+  return parts.join(' · ');
 }
-function kc2(x, inChat) {
-  return `<div class="kc2 ${x.col==='done'?'done':''}" draggable="true" data-card="${x.id}" data-col="${x.col}">
-    <span class="av">${L[x.p||'claude']}</span><div class="t2">${x.t}</div><div class="m2">${meta(x, inChat)}</div>
+function kc2(x, inChat, sub) {
+  return `<div class="kc2 ${x.col==='done'||x.arch?'done':''}" draggable="${ST.group==='status' && !x.arch}" data-card="${x.id}" data-col="${x.col}">
+    <span class="av">${L[x.p||'claude']}</span><div class="t2">${x.t}</div><div class="m2">${meta(x, inChat, sub)}</div>
     ${ST.details ? `<div class="d2">${x.now}${x.need ? ' ' + x.need : ''}</div>` : ''}</div>`;
 }
 function sorted(list, col) {
   const dir = ST.order === 'asc' ? 1 : -1;
   if (ST.sort === 'manual') { const m = ST.manual[col] || list.map(x => x.id); return [...list].sort((a, b) => (m.indexOf(a.id) - m.indexOf(b.id))); }
-  const key = ST.sort === 'chat' || ST.sort === 'exec' ? 'u' : ST.sort;
+  const key = ST.sort === 'chat' || ST.sort === 'exec' || ST.sort === 'status' ? 'u' : ST.sort;
   return [...list].sort((a, b) => key === 't' ? a.t.localeCompare(b.t, 'ru') * dir : (a[key] - b[key]) * -dir);
 }
-function colBody(col, list, inChat) {
-  if (ST.sort !== 'chat' && ST.sort !== 'exec') return sorted(list, col).map(x => kc2(x, inChat)).join('');
-  const field = ST.sort === 'chat' ? 'chat' : 'exec';
-  const groups = [...new Set(list.map(x => x[field]))].sort((a, b) => a.localeCompare(b, 'ru') * (ST.order === 'asc' ? 1 : -1));
-  return groups.map(g => { const items = sorted(list.filter(x => x[field] === g), col); const key = col + '|' + g; const open = !ST.collapsed[key];
-    return `<div class="gh2" data-grp="${key}">${chev(open)}<span>${g}</span><span class="n">${items.length}</span></div>${open ? items.map(x => kc2(x, inChat)).join('') : ''}`; }).join('');
+const SUBS = ['chat','exec','status'];
+function cards(col, list, inChat, keyPrefix) {
+  const sub = SUBS.includes(ST.sort) && ST.sort !== ST.group ? ST.sort : (SUBS.includes(ST.sort) && ST.group !== 'status' ? 'status' : null);
+  if (!sub) return sorted(list, col).map(x => kc2(x, inChat, null)).join('');
+  const order = sub === 'status' ? COLS.map(c => c[0]) : [...new Set(list.map(x => fieldOf(x, sub)))].sort((a, b) => a.localeCompare(b, 'ru'));
+  if (ST.order === 'desc') order.reverse();
+  return order.filter(g => list.some(x => fieldOf(x, sub) === g)).map(g => { const items = sorted(list.filter(x => fieldOf(x, sub) === g), col); const key = keyPrefix + col + '|' + g; const open = !ST.collapsed[key];
+    return `<div class="gh2" data-grp="${key}">${chev(open)}<span>${labelOf(sub, g)}</span><span class="n">${items.length}</span></div>${open ? items.map(x => kc2(x, inChat, sub)).join('') : ''}`; }).join('');
+}
+function colBody(col, list, alist) {
+  let h = cards(col, list, false, '');
+  if (alist && alist.length) { const key = 'arch|' + col; const open = !!ST.collapsed[key];
+    h += `<div class="gh2 archg" data-grp="${key}">${chev(open)}<span>Архив</span><span class="n">${alist.length}</span></div>${open ? sorted(alist, col).map(x => kc2(x, false, null)).join('') : ''}`; }
+  return h;
 }
 function menus() {
   if (!ST.menu) return '';
@@ -482,30 +507,43 @@ function menus() {
     <div class="plabel">Вид</div>
     <div class="pi" data-toggle="hideDone">${ic('hidedone')}Скрыть готовые${ST.hideDone ? `<span class="ck">${ic('check')}</span>` : ''}</div>
     <div class="pi" data-toggle="details">${ic('details')}Показать детали${ST.details ? `<span class="ck">${ic('check')}</span>` : ''}</div></div>`;
-  const main = `<div class="pop" style="right:62px;top:50px;min-width:300px">
-    <div class="pi" data-menu="sortBy">${ic('sortby')}Сортировать по<span class="v">${sortName()} ${ic('down')}</span></div>
-    <div class="pi" data-menu="order">${ic('updown')}Порядок<span class="v">${ST.order==='asc'?'По возрастанию':'По убыванию'} ${ic('down')}</span></div></div>`;
-  if (ST.menu === 'sort') return main;
-  if (ST.menu === 'sortBy') return main + `<div class="pop" style="right:62px;top:104px;min-width:230px">${SORTS.map(([k, n]) => `<div class="pi ${ST.sort===k?'sel':''}" data-sort="${k}">${n}${ST.sort===k?`<span class="ck">${ic('check')}</span>`:''}</div>`).join('')}</div>`;
-  if (ST.menu === 'order') return main + `<div class="pop" style="right:62px;top:146px;min-width:230px">${[['asc','По возрастанию'],['desc','По убыванию']].map(([k, n]) => `<div class="pi ${ST.order===k?'sel':''}" data-order="${k}">${n}${ST.order===k?`<span class="ck">${ic('check')}</span>`:''}</div>`).join('')}</div>`;
-  return '';
+  const main = `<div class="pop" style="right:62px;top:50px;min-width:340px">
+    <div class="pi ${ST.menu==='groupBy'?'hl':''}" data-menu="groupBy">${ic('groupby')}Группировать по<span class="v">${groupName()} ${ic('right')}</span></div>
+    <div class="pi ${ST.menu==='sortBy'?'hl':''}" data-menu="sortBy">${ic('sortby')}Сортировать по<span class="v">${sortName()} ${ic('right')}</span></div>
+    <div class="pi ${ST.menu==='order'?'hl':''}" data-menu="order">${ic('updown')}Порядок<span class="v">${ST.order==='asc'?'По возрастанию':'По убыванию'} ${ic('right')}</span></div></div>`;
+  const list = (items, attr, cur, top) => `<div class="pop" style="right:62px;top:${top}px;min-width:240px">${items.map(([k, n]) => `<div class="pi ${cur===k?'sel':''}" data-${attr}="${k}">${n}${cur===k?`<span class="ck">${ic('check')}</span>`:''}</div>`).join('')}</div>`;
+  if (ST.menu === 'groupBy') return main + list(GROUPS, 'group', ST.group, 104);
+  if (ST.menu === 'sortBy') return main + list(SORTS, 'sort', ST.sort, 146);
+  if (ST.menu === 'order') return main + list([['asc','По возрастанию'],['desc','По убыванию']], 'order', ST.order, 188);
+  return main;
 }
-function archive2() {
-  const total = ARCH.reduce((n, c) => n + c.tasks.length, 0);
-  let h = `<div class="gh2 arch2" data-arch="1">${chev(ST.archOpen)}${ic('arch')}<span>Архив</span><span class="n">${total} задач из ${ARCH.length} архивных чатов</span></div>`;
-  if (ST.archOpen) h += ARCH.map(c => `<div class="gh2 sub" data-archchat="${c.chat}">${chev(ST.archChat===c.chat)}${L[c.p]}<span>${c.chat}</span><span class="n">${c.tasks.length} · ${c.date}</span></div>${ST.archChat===c.chat ? c.tasks.map(t => `<div class="archt">${t}</div>`).join('') : ''}`).join('');
-  return h;
+function columnsDef() {
+  const live = TASKS.filter(x => !(ST.hideDone && x.col === 'done'));
+  const arch = ATASKS.filter(x => !(ST.hideDone && x.col === 'done'));
+  let keys;
+  if (ST.group === 'status') keys = COLS.map(c => c[0]).filter(k => !(ST.hideDone && k === 'done'));
+  else if (ST.group === 'prov') keys = ['Claude', 'Codex'];
+  else if (ST.group === 'date') keys = ['Сегодня', 'Вчера', 'Раньше'];
+  else keys = [...new Set(live.map(x => fieldOf(x, ST.group)))].sort((a, b) => a.localeCompare(b, 'ru'));
+  if (ST.group !== 'status' && ST.order === 'desc') keys.reverse();
+  const cols = keys.map(k => ({ key: k, name: labelOf(ST.group, k), list: live.filter(x => fieldOf(x, ST.group) === k), alist: arch.filter(x => fieldOf(x, ST.group) === k) }));
+  if (ST.group === 'chat' || ST.group === 'exec') cols.push({ key: 'archchats', name: 'Архивные чаты', list: [], alist: [], archChats: arch });
+  return cols;
+}
+function archColumn(c) {
+  const chats = [...new Set(c.archChats.map(x => x.chat))];
+  return chats.map(ch => { const items = c.archChats.filter(x => x.chat === ch); const key = 'ac|' + ch; const open = !!ST.collapsed[key];
+    return `<div class="gh2 archg" data-grp="${key}">${chev(open)}<span>${ch}</span><span class="n">${items.length}</span></div>${open ? items.map(x => kc2(x, false, 'chat')).join('') : ''}`; }).join('');
 }
 function boardL() {
-  const cols = COLS.filter(([k]) => !(ST.hideDone && k === 'done'));
+  const cols = columnsDef();
   return `<div class="board2">
     <div class="bh2"><h2>ЭкоЭксперт</h2><span class="sp"></span>
-      <span class="tb ${ST.menu && ST.menu!=='view'?'on':''}" data-menu="sort" title="Сортировка">${ic('updown')}</span>
+      <span class="tb ${ST.menu && ST.menu!=='view'?'on':''}" data-menu="sort" title="Группировка и сортировка">${ic('updown')}</span>
       <span class="tb ${ST.menu==='view'?'on':''}" data-menu="view" title="Вид">${ic('dots')}</span></div>
-    <div class="cols2" style="grid-template-columns:repeat(${cols.length},minmax(0,1fr))">
-      ${cols.map(([k, n]) => { const list = TASKS.filter(x => x.col === k); return `<div class="col2" data-dropcol="${k}"><div class="ch2">${n}<span class="n">${list.length}</span></div>${colBody(k, list, false)}</div>`; }).join('')}
+    <div class="cols2" style="grid-template-columns:repeat(${cols.length},minmax(${cols.length > 5 ? '210px' : '0'},1fr))">
+      ${cols.map(c => `<div class="col2"><div class="ch2">${c.name}<span class="n">${c.archChats ? c.archChats.length : c.list.length}</span></div>${c.archChats ? archColumn(c) : colBody(c.key, c.list, c.alist)}</div>`).join('')}
     </div>
-    <div class="archwrap">${archive2()}</div>
     ${menus()}</div>`;
 }
 function explorerL(chat) {
@@ -515,7 +553,7 @@ function explorerL(chat) {
     <div class="exph"><div class="tab">${ic('file')}Файлы</div><div class="tab">${ic('diff')}Изменения</div><div class="tab on">${ic('kan')}Канбан</div><span class="sp"></span><span data-exp="close" style="cursor:pointer;display:inline-flex">${ic('x')}</span></div>
     <div class="expb" style="overflow:auto;gap:0">
       ${mine.length ? order.map(([k, n]) => { const l = mine.filter(x => x.col === k); if (!l.length) return ''; const key = 'p|' + k; const open = !ST.collapsed[key];
-        return `<div class="gh2" data-grp="${key}">${chev(open)}<span>${n}</span><span class="n">${l.length}</span></div>${open ? l.map(x => kc2(x, true)).join('') : ''}`; }).join('')
+        return `<div class="gh2" data-grp="${key}">${chev(open)}<span>${n}</span><span class="n">${l.length}</span></div>${open ? l.map(x => kc2(x, true, 'status')).join('') : ''}`; }).join('')
       : '<div class="m2" style="padding:4px 2px;color:var(--fg3)">Пока карточек нет. Появятся, когда агент перейдёт к реализации.</div>'}
     </div></aside>`;
 }
@@ -536,7 +574,7 @@ function chatL(chat) {
   return `<div class="chat">${CHATS[chat]}</div>${composer()}`;
 }
 function modalL() {
-  const x = TASKS.find(t => t.id === ST.modal); if (!x) return '';
+  const x = TASKS.find(t => t.id === ST.modal) || ATASKS.find(t => t.id === ST.modal); if (!x) return '';
   const label = {q:'Очередь', run:'В работе', need:'Нужен ответ', acc:'Ждёт приёмки', done:'Готово'}[x.col];
   return `<div class="dim" data-close="1"><div class="big" data-stop="1">
     <div class="top"><span>${label}</span><span>·</span><span>ЭкоЭксперт</span><span class="sp"></span><span data-close="1" style="cursor:pointer;display:inline-flex">${ic('x')}</span></div>
@@ -544,7 +582,7 @@ function modalL() {
     <div class="fld"><div class="k">Сейчас</div><div class="v">${x.now}</div></div>
     ${x.need ? `<div class="fld"><div class="k">Вопрос к тебе</div><div class="v">${x.need}</div></div>
       <div class="reply"><input class="in" id="reply" placeholder="Ответить ${ST.reading==='A'?'исполнителю':'в чат'}..." style="outline:none;font:inherit;color:var(--fg)"><span class="btn pri" data-reply="${x.id}" style="cursor:pointer">${ic('send')}Отправить</span></div>` : ''}
-    ${x.col==='acc' ? `<div class="fld"><div class="k">Проверено до тебя</div><div class="v"><ul style="margin:0;padding-left:18px">${x.checked.map(c=>`<li>${c}</li>`).join('')}</ul></div></div>
+    ${x.col==='acc' && !x.arch ? `<div class="fld"><div class="k">Проверено до тебя</div><div class="v"><ul style="margin:0;padding-left:18px">${x.checked.map(c=>`<li>${c}</li>`).join('')}</ul></div></div>
       <div class="reply"><input class="in" id="reply" placeholder="Что поправить (для возврата)..." style="outline:none;font:inherit;color:var(--fg)"><span class="btn" data-return="${x.id}" style="cursor:pointer">Вернуть</span><span class="btn pri" data-accept="${x.id}" style="cursor:pointer">Принять</span></div>` : ''}
     <div class="whobox">${pv(x.p||'claude','')}<div><div class="w1">${ST.reading==='A'?x.exec:'Чат '+x.chat}</div><div class="w2">${ST.reading==='A'?'исполнитель · из чата '+x.chat:'карточка ведётся в этом чате'}</div></div><span class="sp"></span><span class="btn" data-open="${x.chat}" style="cursor:pointer">${ic('open')}Открыть чат</span></div>
   </div></div>`;
@@ -555,11 +593,12 @@ function render() {
   document.querySelectorAll('[data-rd]').forEach(b => b.classList.toggle('on', b.dataset.rd === ST.reading));
 }
 document.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-accept],[data-return],[data-go],[data-card],[data-grp],[data-arch],[data-archchat],[data-exp],[data-close],[data-reply],[data-open],[data-rd],[data-act],[data-menu],[data-sort],[data-order],[data-toggle],[data-stop]');
+  const el = e.target.closest('[data-group],[data-accept],[data-return],[data-go],[data-card],[data-grp],[data-arch],[data-archchat],[data-exp],[data-close],[data-reply],[data-open],[data-rd],[data-act],[data-menu],[data-sort],[data-order],[data-toggle],[data-stop]');
   if (!el) { if (ST.menu) { ST.menu = null; render(); } return; }
   const d = el.dataset;
   if (d.stop !== undefined && !e.target.closest('[data-close],[data-reply],[data-open],[data-accept],[data-return]')) return;
-  if (d.menu) { ST.menu = (ST.menu === d.menu || (d.menu === 'sort' && ST.menu && ST.menu !== 'view')) && d.menu !== 'sortBy' && d.menu !== 'order' ? null : d.menu; render(); return; }
+  if (d.menu) { const sub = ['groupBy','sortBy','order'].includes(d.menu); ST.menu = sub ? (ST.menu === d.menu ? 'sort' : d.menu) : ((ST.menu === d.menu || (d.menu === 'sort' && ST.menu && ST.menu !== 'view')) ? null : d.menu); render(); return; }
+  if (d.group) { ST.group = d.group; ST.menu = null; render(); return; }
   if (d.sort) { ST.sort = d.sort; ST.menu = null; render(); return; }
   if (d.order) { ST.order = d.order; ST.menu = null; render(); return; }
   if (d.toggle) { ST[d.toggle] = !ST[d.toggle]; render(); return; }
@@ -581,7 +620,7 @@ document.addEventListener('click', (e) => {
     ST.auto = true; ST.view = 'Тендер'; ST.exp = false; render();
     setTimeout(() => { ST.exp = true; render(); }, 700); return;
   }
-  else if (d.act === 'reset') { resetTasks(); Object.assign(ST, { view:'kan', exp:true, archOpen:false, archChat:null, modal:null, auto:false, sort:'chat', order:'asc', hideDone:false, details:false, menu:null, collapsed:{}, manual:{} }); }
+  else if (d.act === 'reset') { resetTasks(); Object.assign(ST, { view:'kan', exp:true, archOpen:false, archChat:null, modal:null, auto:false, group:'status', sort:'chat', order:'asc', hideDone:false, details:false, menu:null, collapsed:{}, manual:{} }); }
   render();
 });
 let dragId = null;
