@@ -224,6 +224,26 @@ html,body{margin:0;background:var(--page);color:var(--fg);font:14px/1.35 -apple-
 .kc2 .exe .en{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.kc2 .own span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kc2.done .own{color:var(--fg3)}
 .ch2 .sdot{align-self:center}
+.board2{display:flex;flex-direction:column;overflow:hidden!important;padding:16px 0 0 22px!important}
+.board2 .bh2{padding-right:22px}
+.cols2{display:flex!important;gap:16px!important;flex:1;min-height:0;overflow-x:auto;overflow-y:hidden;padding-right:22px;align-items:stretch!important}
+.col2{flex:0 0 282px;width:282px;overflow-y:auto;min-height:0;padding:0 4px 16px 0}
+.cols2::-webkit-scrollbar,.col2::-webkit-scrollbar{height:8px;width:6px}.cols2::-webkit-scrollbar-thumb,.col2::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+.ch2.sticky{position:sticky;top:0;background:var(--win);z-index:2}
+.pills{display:flex;gap:8px;margin:0 40px 8px;flex-wrap:wrap}
+.pill3{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:999px;border:1px solid #333;background:#202020;font-size:13px;color:var(--fg2);white-space:nowrap}
+.pill3.ok{color:#fff;background:#2e6b4a;border-color:#3a8a5e;cursor:pointer}.pill3.back{cursor:pointer;color:var(--fg)}
+.qrow{display:flex;align-items:center;gap:10px;margin:0 40px 8px;background:#222;border:1px solid #2e2e2e;border-radius:12px;padding:8px 10px 8px 16px;font-size:14px;color:var(--fg)}
+.qrow .tx{flex:1;min-width:0}
+.qb{width:34px;height:34px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:#2a2a2a;color:var(--fg2);cursor:pointer;flex:0 0 34px}
+.qb.go{background:#2f7a4f;color:#fff}.qb .ico{width:16px;height:16px}
+.cin{width:100%;background:transparent;border:0;outline:none;color:var(--fg);font:inherit;font-size:13.5px;padding:0}
+.cin::placeholder{color:var(--fg3)}
+.sendb{width:34px;height:34px;border-radius:50%;background:#2f7a4f;color:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.stopb{width:34px;height:34px;border-radius:50%;background:#e04b4b;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.stopb i{width:12px;height:12px;background:#fff;border-radius:2px;display:block}
+.spin{width:18px;height:18px;border-radius:50%;border:2px solid #444;border-top-color:#bbb;display:inline-block}
+.subhead{display:flex;align-items:center;gap:8px;color:var(--fg3);font-size:12.5px}
+.subhead .logo{width:13px;height:13px;color:#9e9e9e}
 .pi.hl{background:#2c2c2c}.gh2.archg{color:var(--fg3)}
 .ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:18px 28px 0;color:var(--fg2);font-size:13px}
 .ctl .btn{cursor:pointer}
@@ -439,6 +459,7 @@ Object.assign(I, {
   check:'<path d="m5 12 5 5 9-10"/>',
   groupby:'<rect x="4" y="5" width="16" height="10" rx="3"/><path d="M4 19h16"/>',
   right:'<path d="m9 6 6 6-6 6"/>',
+  pencil:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m14 6 4 4"/>',
   corner:'<path d="M6 4v7a4 4 0 0 0 4 4h9"/><path d="m15 11 4 4-4 4"/>',
 });
 const ST = { view:'kan', exp:true, archOpen:false, archChat:null, modal:null, reading:'A', auto:false,
@@ -449,6 +470,10 @@ function resetTasks() {
     {id:1, col:'q', t:'Автозакрытие спама в "Отказ" - отложено до твоего решения', chat:'Тендер', exec:'Автозакрытие спама', c:5, u:9, tm:'15:23', now:'Решили пока не включать: хаб помечает спам, закрывают менеджеры.'},
     {id:11, col:'q', t:'Пометка тендера в теме письма - начнёт после тендерного шага', chat:'Тендер', exec:'Пометка тендера', c:8, u:10, tm:'15:30', now:'Ждёт очереди.'},
     {id:12, col:'q', t:'Разбор почты на хабе до amoCRM - после отчёта по звонкам', chat:'Общий ИИ', exec:'Разбор почты', c:2, u:4, tm:'вчера', now:'Ждёт очереди.'},
+    {id:21, col:'q', t:'Шаблон письма-отказа по тендеру - ждёт текста от тебя', chat:'Тендер', exec:'Шаблон отказа', c:10, u:11, tm:'14:10', now:'Ждёт очереди.'},
+    {id:22, col:'q', t:'Напоминание о счёте через 3 дня просрочки', chat:'Дебиторка', exec:'Напоминание о счёте', c:11, u:12, tm:'13:40', now:'Ждёт очереди.'},
+    {id:23, col:'q', t:'Сводка дебиторки в Телеграм по понедельникам', chat:'Дебиторка', exec:'Сводка в Телеграм', c:12, u:12, tm:'13:20', ep:'codex', now:'Ждёт очереди.'},
+    {id:24, col:'q', t:'Расшифровка звонков с пометкой "тендер"', chat:'Общий ИИ', exec:'Расшифровка тендеров', c:13, u:13, tm:'12:50', now:'Ждёт очереди.'},
     {id:3, col:'run', t:'Тендерный шаг в хабе - выложен, ждёт первое живое письмо', chat:'Тендер', exec:'Тендерный шаг', c:3, u:12, tm:'12:20', now:'Шаг на Opus работает, хаб разберёт письма на ближайшем проходе.'},
     {id:13, col:'run', t:'Разбор вложений в письмах - самопроверка на тестовом хабе', chat:'Общий ИИ', exec:'Разбор вложений', c:9, u:14, tm:'16:05', ep:'codex', now:'Исполнитель сам гоняет прогон на тестовом хабе, тебя пока не ждёт.'},
     {id:5, col:'need', t:'Итоги дебиторки: какие этапы считать просроченными?', chat:'Дебиторка', exec:'Итоги дебиторки', c:6, u:15, tm:'16:40', now:'Суммы по этапам посчитаны.', need:'Все этапы после "Счёт выставлен" или только "Ждём оплату"?'},
@@ -475,7 +500,7 @@ const SORTS = [['manual','Произвольно'],['u','Дата изменен
 const GROUPS = [['status','Статус'],['chat','Агент'],['exec','Исполнитель'],['prov','Нейросеть'],['date','Дата изменения']];
 const groupName = () => GROUPS.find(g => g[0] === ST.group)[1];
 const STATUS = Object.fromEntries(COLS);
-const DOT = {q:'#6b6b6b', run:'var(--run)', need:'var(--warn)', acc:'#a78bfa', done:'var(--ok)'};
+const DOT = {q:'#6b6b6b', run:'var(--run)', need:'var(--bad)', acc:'var(--warn)', done:'var(--ok)'};
 const dot = (k) => `<i class="sdot" style="background:${DOT[k]}"></i>`;
 const fieldOf = (x, f) => f === 'status' ? x.col : f === 'prov' ? (x.p === 'codex' ? 'Codex' : 'Claude') : f === 'date' ? (/^\d\d:\d\d$|сейчас/.test(x.tm) ? 'Сегодня' : x.tm === 'вчера' ? 'Вчера' : 'Раньше') : x[f];
 const labelOf = (f, v) => f === 'status' ? STATUS[v] : v;
@@ -549,8 +574,8 @@ function boardL() {
     <div class="bh2"><h2>ЭкоЭксперт</h2><span class="sp"></span>
       <span class="tb ${ST.menu && ST.menu!=='view'?'on':''}" data-menu="sort" title="Группировка и сортировка">${ic('updown')}</span>
       <span class="tb ${ST.menu==='view'?'on':''}" data-menu="view" title="Вид">${ic('dots')}</span></div>
-    <div class="cols2" style="grid-template-columns:repeat(${cols.length},minmax(${cols.length > 5 ? '210px' : '0'},1fr))">
-      ${cols.map(c => `<div class="col2"><div class="ch2">${ST.group==='status' ? dot(c.key) : ''}${c.name}<span class="n">${c.archChats ? c.archChats.length : c.list.length}</span></div>${c.archChats ? archColumn(c) : colBody(c.key, c.list, c.alist)}</div>`).join('')}
+    <div class="cols2">
+      ${cols.map(c => `<div class="col2"><div class="ch2 sticky">${ST.group==='status' ? dot(c.key) : ''}${c.name}<span class="n">${c.archChats ? c.archChats.length : c.list.length}</span></div>${c.archChats ? archColumn(c) : colBody(c.key, c.list, c.alist)}</div>`).join('')}
     </div>
     ${menus()}</div>`;
 }
@@ -571,7 +596,8 @@ function topbarL() {
 }
 function tabsL() {
   const t = (key, html) => `<div class="tab ${ST.view===key?'on':''}" data-go="${key}" style="cursor:pointer">${html}</div>`;
-  return `<div class="tabs">${t('kan', ic('kan') + 'Канбан')}${t('Дебиторка', pv('claude','run') + 'Дебиторка')}${t('Общий ИИ', pv('claude','att') + 'Общий ИИ')}${t('Тендер', pv('claude','') + 'Тендер')}<div class="tab plus">${ic('plus')}</div><span class="sp"></span>${ic('dots')}</div>`;
+  const subs = (ST.openSubs||[]).map(id => { const x = TASKS.find(t => t.id === id); return x ? t('sub:' + id, ic('corner') + pv(x.ep||'claude', x.col==='run'?'run':x.col==='need'?'need':x.col==='acc'?'att':'') + x.exec) : ''; }).join('');
+  return `<div class="tabs">${t('kan', ic('kan') + 'Канбан')}${t('Дебиторка', pv('claude','run') + 'Дебиторка')}${t('Общий ИИ', pv('claude','att') + 'Общий ИИ')}${t('Тендер', pv('claude','') + 'Тендер')}${subs}<div class="tab plus">${ic('plus')}</div><span class="sp"></span>${ic('dots')}</div>`;
 }
 const CHATS = {
   'Дебиторка': `<div class="msg">Сверил вид виджета с оригиналом AMGROUP по снимкам: шапка, итог и кнопки совпадают. Осталось поле "Просрочено" - для него нужен ответ, какие этапы считать просроченными.</div><div class="meta">${ic('copy')}${ic('branch')}<span>Время работы: 6m 10s</span></div>`,
@@ -595,27 +621,60 @@ function modalL() {
     <div class="whobox">${pv(x.p||'claude','')}<div><div class="w1">${ST.reading==='A'?x.exec:'Чат '+x.chat}</div><div class="w2">${ST.reading==='A'?'исполнитель · из чата '+x.chat:'карточка ведётся в этом чате'}</div></div><span class="sp"></span><span class="btn" data-open="${x.chat}" style="cursor:pointer">${ic('open')}Открыть чат</span></div>
   </div></div>`;
 }
+ST.openSubs = []; ST.queue = {}; ST.msgs = {};
+function subChatL(x) {
+  const running = x.col === 'run';
+  const q = ST.queue[x.id] || [];
+  const msgs = ST.msgs[x.id] || [];
+  const pills = [`<span class="pill3">${dot(x.col)}${STATUS[x.col]}</span>`];
+  if (x.col === 'acc') pills.push(`<span class="pill3 ok" data-accept="${x.id}">Принять</span>`, `<span class="pill3 back" data-return="${x.id}">Вернуть</span>`);
+  return `<div class="chat">
+    <div class="subhead">${ic('corner')}Подагент чата <b style="color:var(--fg2);font-weight:500">${x.chat}</b> · исполнитель карточки · ${L[x.ep||'claude']}${x.ep==='codex'?'Codex':'Claude'}</div>
+    <div class="me" style="max-width:720px">Задача от агента ${x.chat}: ${x.t.replace(/ - .*$/, '')}. План согласован с Александром в чате ${x.chat}, делай по нему и отчитывайся в карточку.</div>
+    <div class="tool">${ic('brain')}Thinking</div>
+    <div class="msg">${x.now}${x.need ? ' Вопрос к Александру: ' + x.need : ''}${x.col==='acc' ? ' Всё проверено, жду приёмки.' : ''}</div>
+    ${msgs.map(m => m.me ? `<div class="me">${m.text}</div>` : `<div class="msg">${m.text}</div>`).join('')}
+    ${running ? `<div class="tool"><span class="spin"></span>Работает...</div>` : `<div class="meta">${ic('copy')}${ic('branch')}<span>Время работы: 8m 12s</span></div>`}
+  </div>
+  <div class="pills">${pills.join('')}</div>
+  ${q.map((text, i) => `<div class="qrow"><span class="tx">${text}</span><span class="qb" data-qedit="${x.id}:${i}" title="Изменить">${ic('pencil')}</span><span class="qb go" data-qsend="${x.id}:${i}" title="Отправить сейчас">${ic('send')}</span></div>`).join('')}
+  <div class="composer"><input class="cin" id="subin" data-sub="${x.id}" placeholder="${running ? 'Напишите подагенту - Enter поставит сообщение в очередь' : 'Напишите подагенту сообщение'}">
+    <div class="cbar">${ic('plus')}<span>${L[x.ep||'claude']}${x.ep==='codex'?'GPT-5.5':'Opus 5.5'} ${ic('down')}</span><span>${ic('brain')}Medium ${ic('down')}</span><span>${ic('shield')}Bypass ${ic('down')}</span><span class="sp"></span>${running ? `<span class="spin"></span>${ic('mic')}<span class="stopb" title="Остановить"><i></i></span>` : `${ic('mic')}<span class="sendb" data-subsend="${x.id}">${ic('send')}</span>`}</div></div>${limits()}`;
+}
+function subSend(id, text, now) {
+  const x = TASKS.find(t => t.id === id); if (!x || !text) return;
+  const running = x.col === 'run';
+  if (running && !now) { (ST.queue[id] = ST.queue[id] || []).push(text); render(); return; }
+  (ST.msgs[id] = ST.msgs[id] || []).push({ me: true, text });
+  if (x.col === 'need') { x.col = 'run'; x.t = x.t.replace(/:.*$/, '') + ' - получил ответ, продолжает'; delete x.need; x.tm = 'сейчас'; x.u = 99; }
+  render();
+  setTimeout(() => { ST.msgs[id].push({ me: false, text: now && running ? 'Прервал текущий шаг и учёл твой комментарий, продолжаю.' : 'Принял, учту в работе.' }); render(); }, 700);
+}
 function render() {
-  const main = ST.view === 'kan' ? `<div class="body">${boardL()}</div>` : `<div class="body"><div class="pane">${chatL(ST.view)}</div>${ST.exp ? explorerL(ST.view) : ''}</div>`;
+  const sub = ST.view.startsWith('sub:') ? TASKS.find(t => t.id === +ST.view.slice(4)) : null;
+  const main = ST.view === 'kan' ? `<div class="body">${boardL()}</div>` : sub ? `<div class="body"><div class="pane">${subChatL(sub)}</div>${ST.exp ? explorerL(sub.chat) : ''}</div>` : `<div class="body"><div class="pane">${chatL(ST.view)}</div>${ST.exp ? explorerL(ST.view) : ''}</div>`;
   document.getElementById('live').innerHTML = sidebarL() + `<main class="main">${topbarL()}${tabsL()}${main}${modalL()}</main>`;
   document.querySelectorAll('[data-rd]').forEach(b => b.classList.toggle('on', b.dataset.rd === ST.reading));
 }
 document.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-group],[data-accept],[data-return],[data-go],[data-card],[data-grp],[data-arch],[data-archchat],[data-exp],[data-close],[data-reply],[data-open],[data-rd],[data-act],[data-menu],[data-sort],[data-order],[data-toggle],[data-stop]');
+  const el = e.target.closest('[data-subsend],[data-qsend],[data-qedit],[data-group],[data-accept],[data-return],[data-go],[data-card],[data-grp],[data-arch],[data-archchat],[data-exp],[data-close],[data-reply],[data-open],[data-rd],[data-act],[data-menu],[data-sort],[data-order],[data-toggle],[data-stop]');
   if (!el) { if (ST.menu) { ST.menu = null; render(); } return; }
   const d = el.dataset;
   if (d.stop !== undefined && !e.target.closest('[data-close],[data-reply],[data-open],[data-accept],[data-return]')) return;
   if (d.menu) { const sub = ['groupBy','sortBy','order'].includes(d.menu); ST.menu = sub ? (ST.menu === d.menu ? 'sort' : d.menu) : ((ST.menu === d.menu || (d.menu === 'sort' && ST.menu && ST.menu !== 'view')) ? null : d.menu); render(); return; }
+  if (d.subsend) { const inp = document.getElementById('subin'); subSend(+d.subsend, inp.value.trim(), false); return; }
+  if (d.qsend) { const [id, i] = d.qsend.split(':').map(Number); const text = ST.queue[id].splice(i, 1)[0]; subSend(id, text, true); return; }
+  if (d.qedit) { const [id, i] = d.qedit.split(':').map(Number); const text = ST.queue[id].splice(i, 1)[0]; render(); const inp = document.getElementById('subin'); inp.value = text; inp.focus(); return; }
   if (d.group) { ST.group = d.group; ST.menu = null; render(); return; }
   if (d.sort) { ST.sort = d.sort; ST.menu = null; render(); return; }
   if (d.order) { ST.order = d.order; ST.menu = null; render(); return; }
   if (d.toggle) { ST[d.toggle] = !ST[d.toggle]; render(); return; }
   ST.menu = null;
   if (d.accept) { const x = TASKS.find(t => t.id === +d.accept); x.col = 'done'; x.t = x.t.replace(/ - .*$/, '') + ' - принято'; x.now = 'Принято тобой.'; x.tm = 'сейчас'; x.u = 99; ST.modal = null; }
-  else if (d.return) { const x = TASKS.find(t => t.id === +d.return); const v = (document.getElementById('reply')||{}).value; x.col = 'run'; x.t = x.t.replace(/ - .*$/, '') + ' - возвращено: ' + (v || 'есть замечания'); x.now = 'Исполнитель правит по твоему замечанию.'; x.tm = 'сейчас'; x.u = 99; ST.modal = null; }
+  else if (d.return) { const x = TASKS.find(t => t.id === +d.return); const v = (document.getElementById('reply')||document.getElementById('subin')||{}).value; x.col = 'run'; x.t = x.t.replace(/ - .*$/, '') + ' - возвращено: ' + (v || 'есть замечания'); x.now = 'Исполнитель правит по твоему замечанию.'; x.tm = 'сейчас'; x.u = 99; ST.modal = null; }
   else if (d.reply) { const x = TASKS.find(t => t.id === +d.reply); x.col = 'run'; x.t = x.t.replace(/:.*$/, '') + ' - получил ответ, продолжает'; delete x.need; x.now = 'Продолжает с твоим ответом.'; x.tm = 'сейчас'; x.u = 99; ST.modal = null; }
   else if (d.go) { ST.view = d.go; }
-  else if (d.card) { ST.modal = +d.card; }
+  else if (d.card) { const id = +d.card; if (ATASKS.some(t => t.id === id)) ST.modal = id; else { if (!ST.openSubs.includes(id)) ST.openSubs.push(id); ST.view = 'sub:' + id; } }
   else if (d.grp) { ST.collapsed[d.grp] = !ST.collapsed[d.grp]; }
   else if (d.arch) { ST.archOpen = !ST.archOpen; }
   else if (d.archchat) { ST.archChat = ST.archChat === d.archchat ? null : d.archchat; }
@@ -628,9 +687,10 @@ document.addEventListener('click', (e) => {
     ST.auto = true; ST.view = 'Тендер'; ST.exp = false; render();
     setTimeout(() => { ST.exp = true; render(); }, 700); return;
   }
-  else if (d.act === 'reset') { resetTasks(); Object.assign(ST, { view:'kan', exp:true, archOpen:false, archChat:null, modal:null, auto:false, group:'status', sort:'chat', order:'asc', hideDone:false, details:false, menu:null, collapsed:{}, manual:{} }); }
+  else if (d.act === 'reset') { resetTasks(); ST.openSubs = []; ST.queue = {}; ST.msgs = {}; Object.assign(ST, { view:'kan', exp:true, archOpen:false, archChat:null, modal:null, auto:false, group:'status', sort:'chat', order:'asc', hideDone:false, details:false, menu:null, collapsed:{}, manual:{} }); }
   render();
 });
+document.addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.id === 'subin') { subSend(+e.target.dataset.sub, e.target.value.trim(), false); } });
 let dragId = null;
 document.addEventListener('dragstart', (e) => { const c = e.target.closest('[data-card]'); if (!c) return; dragId = +c.dataset.card; c.classList.add('drag'); });
 document.addEventListener('dragend', () => { dragId = null; document.querySelectorAll('.drag,.over').forEach(n => n.classList.remove('drag', 'over')); });
