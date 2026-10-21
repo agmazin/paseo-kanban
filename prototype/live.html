@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Канбан для Paseo - живой макет</title>
+<style>
+
+:root{--page:#0d0d0e;--win:#1b1b1b;--side:#181818;--line:#2a2a2a;--hover:#222;--active:#2b2b2b;--fg:#ececec;--fg2:#a6a6a6;--fg3:#6f6f6f;--run:#5caaf6;--ok:#35c264;--warn:#db932e;--bad:#f7796d;--card:#212121;--card2:#262626}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--page);color:var(--fg);font:14px/1.35 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+.shot{padding:28px;display:inline-block}
+.cap{font-size:15px;font-weight:600;margin:0 0 12px;color:var(--fg2)}
+.window{position:relative;width:1440px;height:900px;background:var(--win);border:1px solid #2c2c2c;border-radius:12px;overflow:hidden;display:flex;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.ico{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.logo{width:16px;height:16px;fill:currentColor;flex:0 0 16px}
+/* sidebar */
+.side{width:300px;flex:0 0 300px;background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column}
+.side-top{height:44px;display:flex;align-items:center;gap:16px;padding:0 14px;color:var(--fg2)}
+.lights{display:flex;gap:8px}.lights i{width:12px;height:12px;border-radius:50%;background:#3a3a3a;display:block}
+.side-scroll{flex:1;overflow:hidden;padding:2px 0 10px}
+.row{--cut:var(--side);display:flex;align-items:center;gap:10px;height:34px;margin:0 8px;padding:0 10px;border-radius:9px;color:var(--fg);white-space:nowrap}
+.row.sel{--cut:var(--active);background:var(--active)}
+.row .ico{color:var(--fg2)}
+.row .name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.label{display:flex;align-items:center;justify-content:space-between;height:30px;margin:2px 8px 0;padding:0 10px;color:var(--fg2);font-size:13px}
+.label .ico{width:15px;height:15px;color:var(--fg3)}
+.plugin{margin:8px 6px 4px;padding:0 0 6px;border-radius:12px;background:#1c1c1c}
+.plugin .row{margin:0 2px}.plugin .label{margin:0 2px;padding-right:6px}
+.grp .name{font-weight:500}
+.chev{width:14px;height:14px;color:var(--fg3);stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 14px}
+.chev.open{transform:rotate(90deg)}
+.sum{margin-left:auto;color:var(--fg3);font-size:12px;font-variant-numeric:tabular-nums}
+.agent{height:30px;padding-left:30px;font-size:13.5px}
+.agent .ttl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;color:#dcdcdc}
+.time{color:var(--fg3);font-size:12px;font-variant-numeric:tabular-nums}
+.arch{height:30px;padding-left:30px;color:var(--fg2);font-size:13.5px}.arch .ttl{flex:1}
+.pv{position:relative;width:16px;height:16px;flex:0 0 16px;color:var(--fg2)}
+.bd{position:absolute;border-radius:50%;box-shadow:0 0 0 1.6px var(--cut,var(--side))}
+.bd-run,.bd-att{width:7px;height:7px;right:-2px;bottom:-2px}
+.bd-run{background:var(--run)}
+.bd-run::after{content:"";position:absolute;inset:-3.5px;border-radius:50%;border:1.5px solid rgba(92,170,246,.2);border-top-color:var(--run);transform:rotate(40deg)}
+.bd-att{background:var(--ok)}
+.bd-need{width:12px;height:12px;right:-4px;bottom:-4px;background:var(--warn);color:#1b1b1b;font:800 9px/12px -apple-system,system-ui,sans-serif;text-align:center}
+.side-foot{height:46px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 16px;color:var(--fg2)}
+.side-foot span{display:flex;gap:16px}
+/* main */
+.main{position:relative;flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:44px;display:flex;align-items:center;gap:10px;padding:0 16px;color:var(--fg)}
+.topbar .muted{color:var(--fg2)}.topbar .ico{color:var(--fg2)}
+.topbar .sp{flex:1}
+.hbtn{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 10px;border-radius:8px;background:#232323;border:1px solid #2e2e2e;color:var(--fg);font-size:13px}
+.hbtn .ico{width:15px;height:15px;color:var(--fg2)}
+.hbtn .n{background:var(--warn);color:#1b1b1b;font-weight:700;font-size:11px;border-radius:999px;padding:0 6px;line-height:16px}
+.tabs{height:42px;display:flex;align-items:center;gap:2px;padding:0 10px;border-bottom:1px solid var(--line)}
+.tab{--cut:var(--win);display:flex;align-items:center;gap:8px;height:30px;padding:0 10px;border-radius:8px;color:var(--fg2);font-size:13px;white-space:nowrap}
+.tab.on{--cut:#262626;background:#262626;color:var(--fg)}
+.tab .ico{width:15px;height:15px}
+.tab.plus{padding:0 8px}
+.tabs .sp{flex:1}
+.body{flex:1;min-height:0;display:flex}
+.pane{flex:1;min-width:0;display:flex;flex-direction:column}
+/* chat */
+.chat{flex:1;overflow:hidden;padding:26px 56px 18px;display:flex;flex-direction:column;gap:16px;font-size:14px;line-height:1.5}
+.msg{color:#e2e2e2;max-width:760px}
+.me{align-self:flex-end;background:#2a2a2a;border-radius:14px;padding:10px 16px;color:var(--fg)}
+.tool{display:flex;align-items:center;gap:10px;color:var(--fg2);font-size:13px}
+.tool .ico{width:15px;height:15px}
+.meta{display:flex;align-items:center;gap:14px;color:var(--fg3);font-size:12.5px}
+.meta .ico{width:15px;height:15px}
+.trow{display:flex;align-items:flex-start;gap:10px;background:#1f2328;border:1px solid #2b3a4a;border-radius:10px;padding:9px 12px;font-size:13px;color:var(--fg);max-width:760px}
+.trow .ico{color:var(--run);width:16px;height:16px;margin-top:2px}.trow .s{margin-top:2px}
+.trow .s{color:var(--fg2)}
+.composer{margin:0 40px 0;border:1px solid #2e2e2e;border-radius:14px;padding:13px 16px 11px;background:#1e1e1e}
+.composer .ph{color:var(--fg3);font-size:13.5px}
+.cbar{display:flex;gap:16px;margin-top:16px;color:var(--fg2);font-size:13px;align-items:center}
+.cbar span{display:inline-flex;gap:6px;align-items:center}.cbar .sp{flex:1}
+.cbar .ico{width:15px;height:15px}
+/* limits strip (paseo-limits 0.1.4, medium) */
+.lim{display:flex;align-items:center;gap:14px;height:20px;margin:12px 40px 12px;padding:0 6px;font:13px/20px -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif;color:var(--fg2);white-space:nowrap}
+.lim .rf{width:15px;height:15px;color:#5b5b5b;margin:0 -2px 0 -0px}
+.lim .lg{color:#c9c9c9;display:inline-flex}
+.lim .win{display:inline-flex;align-items:center;gap:6px}
+.lim .bar{width:56px;height:6px;border-radius:3px;background:#2a2a2a;overflow:hidden;display:inline-block}
+.lim .bar i{display:block;height:100%;background:#3f8f6a}
+.lim .bar i.w{background:#c98a2e}
+.lim .pct{color:var(--fg)}.lim .pct.w{color:#e2a64a}
+.lim .left{color:#5b5b5b}
+.lim .vsep{width:1px;height:16px;background:var(--line)}
+/* board */
+.board{flex:1;min-width:0;min-height:0;padding:22px 26px 0;display:flex;flex-direction:column;gap:16px;overflow:hidden}
+.bhead{display:flex;align-items:baseline;gap:12px}
+.bhead h2{margin:0;font-size:19px;font-weight:600}
+.bhead .s{color:var(--fg2);font-size:13px}
+.cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:start}
+.col{background:#191919;border:1px solid #242424;border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.colh{display:flex;align-items:center;gap:8px;padding:2px 4px 4px;font-size:13px;color:var(--fg2);font-weight:500}
+.colh .n{color:var(--fg3);font-variant-numeric:tabular-nums}
+.colh .dot{width:8px;height:8px;border-radius:50%}
+.kc{--cut:var(--card);background:var(--card);border:1px solid #2c2c2c;border-radius:10px;padding:11px 12px;display:flex;flex-direction:column;gap:6px}
+.kc .t{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;font-weight:600;line-height:1.35;color:var(--fg)}
+.kc .t span{flex:1}
+.kc .now{font-size:12.5px;color:var(--fg2);line-height:1.4}
+.kc .need{font-size:12.5px;line-height:1.4;color:#f0c27a;background:rgba(219,147,46,.1);border:1px solid rgba(219,147,46,.32);border-radius:8px;padding:6px 8px}
+.kc .ft{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--fg3);margin-top:2px}
+.kc .ft .who{min-width:0;color:#cfcfcf;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kc .ft .sp{flex:1}
+.kc .ft .logo{width:14px;height:14px;color:#cfcfcf;flex-basis:14px}
+.kc.new{box-shadow:0 0 0 1.5px var(--run),0 0 24px rgba(92,170,246,.25)}
+.mini{position:relative;display:inline-block;width:8px;height:8px;border-radius:50%;flex:0 0 auto;margin-top:5px}
+.m-run{background:var(--run)}
+.m-run::after{content:"";position:absolute;inset:-3px;border-radius:50%;border:1.4px solid rgba(92,170,246,.2);border-top-color:var(--run);transform:rotate(40deg)}
+.m-att{background:var(--ok)}
+.m-need{width:13px;height:13px;margin-top:2px;background:var(--warn);color:#1b1b1b;font:800 9.5px/13px -apple-system,system-ui,sans-serif;text-align:center}
+.m-q{background:#4a4a4a}
+.archrow{display:flex;align-items:center;gap:10px;height:36px;padding:0 12px;border-radius:9px;color:var(--fg2);font-size:13.5px;background:#191919;border:1px solid #242424}
+.archrow .sp{flex:1}
+.archrow .n{color:var(--fg3);font-size:12.5px}
+/* explorer (right panel) */
+.exp{width:380px;flex:0 0 380px;border-left:1px solid var(--line);background:#191919;display:flex;flex-direction:column}
+.exph{height:42px;display:flex;align-items:center;gap:2px;padding:0 8px;border-bottom:1px solid var(--line)}
+.exph .tab{height:28px}
+.exph .sp{flex:1}
+.expb{flex:1;overflow:hidden;padding:14px 14px;display:flex;flex-direction:column;gap:10px}
+.sec .mini{margin-top:0}.sec{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--fg2);font-weight:500;padding:4px 2px 0}
+.sec .n{color:var(--fg3)}
+.ptitle{display:flex;align-items:baseline;gap:8px;padding:0 2px}
+.ptitle b{font-size:15px}
+.ptitle span{color:var(--fg3);font-size:12.5px}
+/* overlay card */
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center}
+.big{width:620px;background:#1f1f1f;border:1px solid #333;border-radius:16px;box-shadow:0 30px 80px rgba(0,0,0,.6);padding:22px 24px;display:flex;flex-direction:column;gap:16px}
+.big .top{display:flex;align-items:center;gap:10px;color:var(--fg2);font-size:13px}
+.big .top .sp{flex:1}
+.status{display:inline-flex;align-items:center;gap:7px;background:#262626;border-radius:999px;padding:3px 10px 3px 8px;font-size:12.5px;color:var(--fg)}
+.big h3{margin:0;font-size:21px;font-weight:600;line-height:1.3}
+.fld .k{font-size:12px;color:var(--fg3);margin-bottom:5px;text-transform:none}
+.fld .v{font-size:14.5px;color:#e4e4e4;line-height:1.5}
+.big .need{font-size:14px;line-height:1.5;color:#f3c98a;background:rgba(219,147,46,.1);border:1px solid rgba(219,147,46,.35);border-radius:10px;padding:10px 12px}
+.reply{display:flex;gap:8px}
+.reply .in{flex:1;background:#171717;border:1px solid #3a3a3a;border-radius:9px;padding:9px 12px;color:var(--fg3);font-size:13.5px}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid #363636;background:#262626;color:var(--fg);padding:8px 13px;border-radius:9px;font-size:13.5px}
+.btn.pri{background:#2f6db0;border-color:#3b7cc4}
+.btn .ico{width:15px;height:15px}
+.whobox{display:flex;align-items:center;gap:12px;background:#181818;border:1px solid #2c2c2c;border-radius:12px;padding:12px 14px}
+.whobox .pv{color:#d6d6d6}
+.whobox .w1{font-size:14px;color:var(--fg)}
+.whobox .w2{font-size:12.5px;color:var(--fg3);margin-top:2px}
+.whobox .sp{flex:1}
+/* readings */
+.rd{display:grid;grid-template-columns:1fr 1fr;gap:22px;width:1440px}
+.rbox{background:#161616;border:1px solid #2a2a2a;border-radius:14px;padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+.rbox h3{margin:0;font-size:18px}
+.rbox .sub{color:var(--fg2);font-size:13.5px;line-height:1.5}
+.rbox.rec{border-color:#2f5b86;box-shadow:0 0 0 1px rgba(92,170,246,.25)}
+.badge{display:inline-block;font-size:12px;background:rgba(92,170,246,.15);color:#8cc3fa;border-radius:999px;padding:2px 9px;margin-left:8px;vertical-align:middle;font-weight:500}
+.flow{display:flex;gap:14px;align-items:stretch}
+.chatbox{flex:0 0 220px;background:#1d1d1d;border:1px solid #303030;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.chatbox .h{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600}
+.chatbox .l{height:8px;border-radius:5px;background:#2a2a2a}
+.chatbox .l.s{width:60%}
+.arrow{align-self:center;color:var(--fg3);font-size:22px}
+.stack{flex:1;display:flex;flex-direction:column;gap:8px}
+.stack .kc{padding:9px 11px}
+.sub2{display:flex;align-items:center;gap:7px;font-size:12px;color:#cfcfcf;background:#1a1a1a;border:1px dashed #3a3a3a;border-radius:8px;padding:5px 8px}
+.sub2 .logo{width:13px;height:13px}
+.pc{display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;line-height:1.5}
+.pc div b{display:block;font-size:12px;color:var(--fg3);font-weight:500;margin-bottom:3px}
+.pc ul{margin:0;padding-left:16px;color:#d6d6d6}
+.twin{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+.panelbox{background:var(--win);border:1px solid #2c2c2c;border-radius:12px;overflow:hidden;width:620px}
+.panelbox .bh{height:40px;display:flex;align-items:center;padding:0 14px;color:var(--fg2);font-size:13px;border-bottom:1px solid var(--line)}
+.panelbox .bb{padding:14px;display:flex;flex-direction:column;gap:8px}
+.ar{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:8px;font-size:13.5px;color:#dcdcdc}
+.ar.sub{padding-left:34px;height:30px;font-size:13px;color:var(--fg2)}
+.ar .sp{flex:1}
+.ar .t2{color:var(--fg3);font-size:12px}
+.ar .logo{color:#bdbdbd}
+.ar .pill2{font-size:11.5px;color:var(--fg2);background:#262626;border-radius:999px;padding:1px 8px}
+.ar.more{color:var(--run);font-size:12.5px;padding-left:34px}
+
+.ctl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:18px 28px 0;color:var(--fg2);font-size:13px}
+.ctl .btn{cursor:pointer}
+.ctl .btn.on{border-color:var(--run);background:rgba(92,170,246,.15);color:#fff}
+.ctl .grp2{display:inline-flex;gap:6px;align-items:center;margin-left:8px}
+.livewrap{padding:16px 28px 28px}
+.kc:hover{border-color:#3a3a3a}
+.tab[data-go]:hover{background:#222}
+.row.agent[data-go]:hover{background:var(--hover)}
+input.in::placeholder{color:var(--fg3)}
+</style>
+</head>
+<body>
+<div class="ctl">
+  <b style="color:var(--fg)">Живой макет "Канбан"</b>
+  <span class="btn" data-act="auto">Агент "Тендер" переходит к реализации</span>
+  <span class="grp2">Карточка: <span class="btn" data-rd="A">А - свой исполнитель</span><span class="btn" data-rd="B">Б - пункт работы чата</span></span>
+  <span class="btn" data-act="reset">Сначала</span>
+</div>
+<div class="livewrap"><div class="window" id="live"></div></div>
+<script>
+
+const CLAUDE = "M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 01-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.668-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z";
+const CODEX = "M21.55 10.004a5.416 5.416 0 00-.478-4.501c-1.217-2.09-3.662-3.166-6.05-2.66A5.59 5.59 0 0010.831 1C8.39.995 6.224 2.546 5.473 4.838A5.553 5.553 0 001.76 7.496a5.487 5.487 0 00.691 6.5 5.416 5.416 0 00.477 4.502c1.217 2.09 3.662 3.165 6.05 2.66A5.586 5.586 0 0013.168 23c2.443.006 4.61-1.546 5.361-3.84a5.553 5.553 0 003.715-2.66 5.488 5.488 0 00-.693-6.497v.001zm-8.381 11.558a4.199 4.199 0 01-2.675-.954c.034-.018.093-.05.132-.074l4.44-2.53a.71.71 0 00.364-.623v-6.176l1.877 1.069c.02.01.033.029.036.05v5.115c-.003 2.274-1.87 4.118-4.174 4.123zM4.192 17.78a4.059 4.059 0 01-.498-2.763c.032.02.09.055.131.078l4.44 2.53c.225.13.504.13.73 0l5.42-3.088v2.138a.068.068 0 01-.027.057L9.9 19.288c-1.999 1.136-4.552.46-5.707-1.51h-.001zM3.023 8.216A4.15 4.15 0 015.198 6.41l-.002.151v5.06a.711.711 0 00.364.624l5.42 3.087-1.876 1.07a.067.067 0 01-.063.005l-4.489-2.559c-1.995-1.14-2.679-3.658-1.53-5.63h.001zm15.417 3.54l-5.42-3.088L14.896 7.6a.067.067 0 01.063-.006l4.489 2.557c1.998 1.14 2.683 3.662 1.529 5.633a4.163 4.163 0 01-2.174 1.807V12.38a.71.71 0 00-.363-.623zm1.867-2.773a6.04 6.04 0 00-.132-.078l-4.44-2.53a.731.731 0 00-.729 0l-5.42 3.088V7.325a.068.068 0 01.027-.057L14.1 4.713c2-1.137 4.555-.46 5.707 1.513.487.833.664 1.809.499 2.757h.001zm-11.741 3.81l-1.877-1.068a.065.065 0 01-.036-.051V6.559c.001-2.277 1.873-4.122 4.181-4.12.976 0 1.92.338 2.671.954-.034.018-.092.05-.131.073l-4.44 2.53a.71.71 0 00-.365.623l-.003 6.173v.002zm1.02-2.168L12 9.25l2.414 1.375v2.75L12 14.75l-2.415-1.375v-2.75z";
+const I = {
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  hist:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  cal:'<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M14 15l2 1"/>',
+  chev:'<path d="m9 6 6 6-6 6"/>',
+  kan:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 7v7M12 7v4M16 7v9"/>',
+  file:'<path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/>',
+  diff:'<circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><path d="M6 9v4a5 5 0 0 0 5 5h4M18 15v-4a5 5 0 0 0-5-5H9"/>',
+  x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  arch:'<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',
+  pr:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M15 3v18"/>',
+  pl:'<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/>',
+  open:'<path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>',
+  mic:'<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/>',
+  dots:'<circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+  branch:'<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="12" cy="19" r="2.5"/><path d="M6 8.5c0 4 6 4 6 8M18 8.5c0 4-6 4-6 8"/>',
+  shell:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/>',
+  brain:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4l2.5 1.5"/>',
+  bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  shield:'<path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6z"/><path d="M4 4l16 16"/>',
+  fold:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M12 11v5M9.5 13.5h5"/>',
+  gauge:'<circle cx="12" cy="12" r="9"/><path d="m12 12 4-4"/>',
+  srv:'<rect x="4" y="4" width="16" height="7" rx="1.5"/><rect x="4" y="13" width="16" height="7" rx="1.5"/>',
+  help:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5V14M12 17h.01"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  vs:'<rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 9 4 3-4 3"/>',
+  down:'<path d="m6 9 6 6 6-6"/>',
+  refresh:'<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+  send:'<path d="M12 19V5M5 12l7-7 7 7"/>'
+};
+const ic = (n, c='') => `<svg class="ico ${c}" viewBox="0 0 24 24">${I[n]}</svg>`;
+const chev = (open) => `<svg class="chev ${open?'open':''}" viewBox="0 0 24 24">${I.chev}</svg>`;
+const L = { claude: `<svg class="logo" viewBox="0 0 24 24"><path d="${CLAUDE}"/></svg>`, codex: `<svg class="logo" viewBox="0 0 24 24" fill-rule="evenodd"><path d="${CODEX}"/></svg>` };
+const pv = (p, b) => `<span class="pv">${L[p]}${b ? `<i class="bd bd-${b}">${b==='need'?'!':''}</i>` : ''}</span>`;
+const mini = (s) => s==='done' ? '' : `<i class="mini m-${s}">${s==='need'?'!':''}</i>`;
+
+function sidebar(sel) {
+  const a = (p, t, tm, b, s) => `<div class="row agent ${s?'sel':''}">${pv(p,b)}<span class="ttl">${t}</span><span class="time">${tm}</span></div>`;
+  return `<aside class="side">
+    <div class="side-top"><div class="lights"><i></i><i></i><i></i></div>${ic('pl')}</div>
+    <div class="side-scroll">
+      <div class="row">${ic('plus')}<span class="name">Новое рабочее пространство</span></div>
+      <div class="row">${ic('hist')}<span class="name">История</span></div>
+      <div class="row">${ic('search')}<span class="name">Поиск</span></div>
+      <div class="row">${ic('cal')}<span class="name">Расписания</span></div>
+      <div class="plugin">
+        <div class="label"><span>Диалоги</span>${ic('plus')}</div>
+        <div class="row grp">${chev(false)}<span class="name">agmazin</span><span class="sum">6</span></div>
+        <div class="row grp">${chev(true)}<span class="name">ЭкоЭксперт</span><span class="sum">3</span></div>
+        ${a('claude','Дебиторка','17:06','run', sel==='Дебиторка')}
+        ${a('claude','Общий ИИ','16:52','att', sel==='Общий ИИ')}
+        ${a('claude','Тендер','15:23', sel==='Тендер-need'?'need':'', sel && sel.startsWith('Тендер'))}
+        <div class="row arch">${chev(false)}<span class="ttl">Архив</span><span class="time">155</span></div>
+        <div class="row grp">${chev(false)}<span class="name">CTG</span><span class="sum">1</span></div>
+        <div class="row grp">${chev(false)}<span class="name">otchetico</span><span class="sum">1</span></div>
+      </div>
+    </div>
+    <div class="side-foot"><span>${ic('fold')}${ic('gauge')}${ic('srv')}</span><span>${ic('help')}${ic('gear')}</span></div>
+  </aside>`;
+}
+function topbar() {
+  return `<div class="topbar"><span>ЭкоЭксперт</span><span class="muted">AI OS</span>${ic('dots')}<span class="sp"></span>
+    <span class="hbtn">${ic('kan')}Канбан<span class="n">2</span></span>${ic('vs')}${ic('pr')}</div>`;
+}
+function tabs(on) {
+  const t = (key, html) => `<div class="tab ${on===key?'on':''}">${html}</div>`;
+  return `<div class="tabs">
+    ${t('kan', ic('kan') + 'Канбан')}
+    ${t('deb', pv('claude','run') + 'Дебиторка')}
+    ${t('ai', pv('claude','att') + 'Общий ИИ')}
+    ${t('ten', pv('claude', on==='ten-need'?'need':'') + 'Тендер')}
+    <div class="tab plus">${ic('plus')}</div><span class="sp"></span>${ic('dots')}</div>`;
+}
+function card(c) {
+  return `<div class="kc ${c.cls||''}">
+    <div class="t"><span>${c.t}</span>${mini(c.s)}</div>
+    ${c.now ? `<div class="now">Сейчас: ${c.now}</div>` : ''}
+    ${c.need ? `<div class="need">От тебя: ${c.need}</div>` : ''}
+    <div class="ft">${L[c.p||'claude']}<span class="who">${c.who}</span><span class="sp"></span><span>${c.tm}</span></div>
+  </div>`;
+}
+const CARDS = {
+  q: [
+    {t:'Разбор почты на хабе до amoCRM', s:'q', now:'ждёт очереди, начнёт после тендерного шага', who:'Разбор почты · из чата Общий ИИ', tm:'вчера'},
+    {t:'Автозакрытие спама в "Отказ"', s:'q', now:'отложено: решили пока не включать', who:'Автозакрытие спама · из чата Тендер', tm:'15:23'},
+  ],
+  run: [
+    {t:'Тендерный шаг в хабе', s:'run', now:'выложен на Opus, жду первое живое письмо-тендер', who:'Тендерный шаг · из чата Тендер', tm:'12:20'},
+    {t:'Виджет "Дебиторка" вместо AMGROUP', s:'run', now:'сверяю вид с оригиналом по снимкам', who:'Виджет Дебиторка · из чата Дебиторка', tm:'17:06'},
+  ],
+  need: [
+    {t:'Итоги дебиторки в воронке', s:'need', now:'посчитал суммы по этапам', need:'какие этапы считать просроченными?', who:'Итоги дебиторки · из чата Дебиторка', tm:'16:40'},
+    {t:'Отчёт по звонкам за октябрь', s:'need', now:'отчёт готов, лежит в outbox', need:'посмотреть и сказать "лей"', who:'Отчёт по звонкам · из чата Общий ИИ', tm:'16:52', p:'codex'},
+  ],
+  done: [
+    {t:'Тег "Тендер" в amoCRM', s:'att', now:'готово, проверено на живой сделке', who:'Тег Тендер · из чата Тендер', tm:'13:05'},
+    {t:'Причина отказа - обязательное поле', s:'done', now:'готово', who:'Причина отказа · из чата Дебиторка', tm:'вчера'},
+    {t:'Чёрный список: импорт номеров', s:'done', now:'готово', who:'Чёрный список · из чата Общий ИИ', tm:'19 окт', p:'codex'},
+  ]
+};
+function column(name, dot, key, extra='') {
+  const list = CARDS[key];
+  return `<div class="col"><div class="colh"><i class="dot" style="background:${dot}"></i>${name}<span class="n">${list.length}</span></div>${list.map(card).join('')}${extra}</div>`;
+}
+function board(archive) {
+  return `<div class="board">
+    <div class="bhead"><h2>ЭкоЭксперт</h2><span class="s">9 задач в 3 чатах · 2 ждут тебя</span></div>
+    <div class="cols">
+      ${column('Очередь', '#5a5a5a', 'q')}
+      ${column('В работе', 'var(--run)', 'run')}
+      ${column('Нужен ты', 'var(--warn)', 'need')}
+      ${column('Готово', 'var(--ok)', 'done')}
+    </div>
+    ${archive || `<div class="archrow">${chev(false)}${ic('arch')}<span>Архив</span><span class="sp"></span><span class="n">14 задач из 5 архивных чатов</span></div>`}
+  </div>`;
+}
+function limits() {
+  return `<div class="lim"><svg class="ico rf" viewBox="0 0 24 24">${I.refresh}</svg><span class="lg">${L.claude}</span>
+    <span class="win">5ч <span class="bar"><i style="width:47%"></i></span><span class="pct">47%</span><span class="left">· 1ч 2м</span></span>
+    <span class="win">нед <span class="bar"><i style="width:29%"></i></span><span class="pct">29%</span><span class="left">· 3д 1ч</span></span>
+    <i class="vsep"></i><span class="lg">${L.codex}</span>
+    <span class="win">нед <span class="bar"><i style="width:66%"></i></span><span class="pct">66%</span><span class="left">· 5д 18ч</span></span></div>`;
+}
+function composer() {
+  return `<div class="composer"><div class="ph">Напишите агенту сообщение, отметьте @files или используйте /commands и /skills.</div>
+    <div class="cbar">${ic('plus')}<span>${L.claude}Opus 5.5 ${ic('down')}</span><span>${ic('brain')}Medium ${ic('down')}</span><span>${ic('shield')}Bypass ${ic('down')}</span><span style="color:#e2b84a">${ic('bolt')}</span><span class="sp"></span>${ic('mic')}</div></div>${limits()}`;
+}
+function chatTender(auto) {
+  return `<div class="chat">
+    <div class="msg">Тендерный шаг на Opus выложен 3 минуты назад. Новых писем с тех пор не приходило, хаб разберёт их на ближайшем проходе в 12:20. Первую живую сделку с тегом "Тендер" покажу, как только такое письмо придёт.</div>
+    <div class="meta">${ic('copy')}${ic('branch')}<span>Время работы: 12s</span></div>
+    <div class="me">"включаем автозакрытие спама в "Отказ" сейчас" пока нет</div>
+    <div class="tool">${ic('brain')}Thinking</div>
+    <div class="msg">Понял, автозакрытие спама пока не включаем: хаб, как и раньше, только помечает спам тегом и причиной, а закрывают менеджеры. Карточку оставляю в очереди.</div>
+    ${auto ? `
+    <div class="me">ок, давай срок подачи тендера в задачу менеджеру, план устраивает</div>
+    <div class="msg">План согласован, приступаю к реализации. Завожу карточку и исполнителя, ход работы будет справа.</div>
+    <div class="trow">${ic('kan')}<div><div>Канбан: новая карточка <b>"Срок подачи тендера в задачу менеджеру"</b></div><div class="s">В работе · исполнитель Срок подачи · ход работы в панели справа</div></div></div>` : `
+    <div class="meta">${ic('copy')}${ic('branch')}<span>Время работы: 3h 2m</span></div>`}
+  </div>${composer()}`;
+}
+function explorer(auto) {
+  const c = (o) => card(o);
+  const runList = auto
+    ? [{t:'Срок подачи тендера в задачу менеджеру', s:'run', now:'изучает, где в письме тендера срок подачи', who:'Срок подачи · исполнитель', tm:'сейчас', cls:'new'}, {t:'Тендерный шаг в хабе', s:'run', now:'выложен на Opus, жду первое живое письмо-тендер', who:'Тендерный шаг · исполнитель', tm:'12:20'}]
+    : [{t:'Тендерный шаг в хабе', s:'run', now:'выложен на Opus, жду первое живое письмо-тендер', who:'Тендерный шаг · исполнитель', tm:'12:20'}];
+  return `<aside class="exp">
+    <div class="exph"><div class="tab">${ic('file')}Файлы</div><div class="tab">${ic('diff')}Изменения</div><div class="tab on">${ic('kan')}Канбан</div><span class="sp"></span>${ic('x')}</div>
+    <div class="expb">
+      <div class="ptitle"><b>Тендер</b><span>${auto?4:3} карточки этого чата</span></div>
+      <div class="sec">${mini('run')}В работе<span class="n">${runList.length}</span></div>
+      ${runList.map(c).join('')}
+      <div class="sec">${mini('q')}Очередь<span class="n">1</span></div>${c({t:'Автозакрытие спама в "Отказ"', s:'q', now:'отложено: решили пока не включать', who:'Автозакрытие спама · исполнитель', tm:'15:23'})}
+      <div class="sec">${mini('att')}Готово<span class="n">1</span></div>
+      ${c({t:'Тег "Тендер" в amoCRM', s:'att', now:'готово, проверено на живой сделке', who:'Тег Тендер · исполнитель', tm:'13:05'})}
+    </div>
+  </aside>`;
+}
+
+// ---- живой макет ----
+const ST = { view: 'kan', exp: true, archOpen: false, archChat: 'СПАМ ЭЭ', modal: null, reading: 'A', auto: false, flash: null, replied: {} };
+let TASKS = [];
+function resetTasks() {
+  TASKS = [
+    {id:1, t:'Разбор почты на хабе до amoCRM', col:'q', now:'ждёт очереди, начнёт после тендерного шага', exec:'Разбор почты', chat:'Общий ИИ', tm:'вчера'},
+    {id:2, t:'Автозакрытие спама в "Отказ"', col:'q', now:'отложено: решили пока не включать', exec:'Автозакрытие спама', chat:'Тендер', tm:'15:23'},
+    {id:3, t:'Тендерный шаг в хабе', col:'run', now:'выложен на Opus, жду первое живое письмо-тендер', exec:'Тендерный шаг', chat:'Тендер', tm:'12:20'},
+    {id:4, t:'Виджет "Дебиторка" вместо AMGROUP', col:'run', now:'сверяю вид с оригиналом по снимкам', exec:'Виджет Дебиторка', chat:'Дебиторка', tm:'17:06'},
+    {id:5, t:'Итоги дебиторки в воронке', col:'need', now:'посчитал суммы долга по этапам воронки', need:'какие этапы считать просроченными: все после "Счёт выставлен" или только "Ждём оплату"?', exec:'Итоги дебиторки', chat:'Дебиторка', tm:'16:40'},
+    {id:6, t:'Отчёт по звонкам за октябрь', col:'need', now:'отчёт готов, лежит в outbox', need:'посмотреть и сказать "лей"', exec:'Отчёт по звонкам', chat:'Общий ИИ', tm:'16:52', p:'codex'},
+    {id:7, t:'Тег "Тендер" в amoCRM', col:'done', fresh:true, now:'готово, проверено на живой сделке', exec:'Тег Тендер', chat:'Тендер', tm:'13:05'},
+    {id:8, t:'Причина отказа - обязательное поле', col:'done', now:'готово', exec:'Причина отказа', chat:'Дебиторка', tm:'вчера'},
+    {id:9, t:'Чёрный список: импорт номеров', col:'done', now:'готово', exec:'Чёрный список', chat:'Общий ИИ', tm:'19 окт', p:'codex'},
+  ];
+}
+resetTasks();
+const ARCH = [
+  {chat:'СПАМ ЭЭ', p:'claude', date:'12 окт', tasks:[['Метка спама в хабе','Готово'],['Причина "Спам" в amoCRM','Готово'],['Чистка старых спам-сделок','Не доделано']]},
+  {chat:'Карусель', p:'claude', date:'5 окт', tasks:[['Карусель менеджеров по очереди','Готово'],['Пропуск отпускников','Готово']]},
+  {chat:'Чёрный список (старый)', p:'codex', date:'1 окт', tasks:[['Список номеров в amoCRM','Готово'],['Блок звонков в onlinePBX','Готово'],['Импорт из Мегаплана','Не доделано'],['Отчёт по блокировкам','Готово']]},
+];
+const COLS = [['q','Очередь','#5a5a5a'],['run','В работе','var(--run)'],['need','Нужен ты','var(--warn)'],['done','Готово','var(--ok)']];
+const stOf = (x) => x.col === 'q' ? 'q' : x.col === 'run' ? 'run' : x.col === 'need' ? 'need' : (x.fresh ? 'att' : 'done');
+const whoOf = (x, inChat) => ST.reading === 'A' ? (inChat ? `${x.exec} · исполнитель` : `${x.exec} · из чата ${x.chat}`) : `чат ${x.chat}`;
+function cardL(x, inChat) {
+  return `<div class="kc ${ST.flash===x.id?'new':''}" data-card="${x.id}" style="cursor:pointer">
+    <div class="t"><span>${x.t}</span>${mini(stOf(x))}</div>
+    ${x.now ? `<div class="now">Сейчас: ${x.now}</div>` : ''}
+    ${x.need ? `<div class="need">От тебя: ${x.need}</div>` : ''}
+    <div class="ft">${L[x.p||'claude']}<span class="who">${whoOf(x, inChat)}</span><span class="sp"></span><span>${x.tm}</span></div></div>`;
+}
+const needCount = () => TASKS.filter(x => x.col === 'need').length;
+function sidebarL() {
+  const a = (t, tm, b) => `<div class="row agent ${ST.view===t?'sel':''}" data-go="${t}" style="cursor:pointer">${pv('claude',b)}<span class="ttl">${t}</span><span class="time">${tm}</span></div>`;
+  return `<aside class="side">
+    <div class="side-top"><div class="lights"><i></i><i></i><i></i></div>${ic('pl')}</div>
+    <div class="side-scroll">
+      <div class="row">${ic('plus')}<span class="name">Новое рабочее пространство</span></div>
+      <div class="row">${ic('hist')}<span class="name">История</span></div>
+      <div class="row">${ic('search')}<span class="name">Поиск</span></div>
+      <div class="row">${ic('cal')}<span class="name">Расписания</span></div>
+      <div class="plugin">
+        <div class="label"><span>Диалоги</span>${ic('plus')}</div>
+        <div class="row grp">${chev(false)}<span class="name">agmazin</span><span class="sum">6</span></div>
+        <div class="row grp">${chev(true)}<span class="name">ЭкоЭксперт</span><span class="sum">3</span></div>
+        ${a('Дебиторка','17:06','run')}${a('Общий ИИ','16:52','att')}${a('Тендер','15:23','')}
+        <div class="row arch">${chev(false)}<span class="ttl">Архив</span><span class="time">155</span></div>
+        <div class="row grp">${chev(false)}<span class="name">CTG</span><span class="sum">1</span></div>
+        <div class="row grp">${chev(false)}<span class="name">otchetico</span><span class="sum">1</span></div>
+      </div>
+    </div>
+    <div class="side-foot"><span>${ic('fold')}${ic('gauge')}${ic('srv')}</span><span>${ic('help')}${ic('gear')}</span></div>
+  </aside>`;
+}
+function topbarL() {
+  return `<div class="topbar"><span>ЭкоЭксперт</span><span class="muted">AI OS</span>${ic('dots')}<span class="sp"></span>
+    <span class="hbtn" data-go="kan" style="cursor:pointer">${ic('kan')}Канбан${needCount()?`<span class="n">${needCount()}</span>`:''}</span>${ic('vs')}<span data-exp="toggle" style="cursor:pointer;display:inline-flex">${ic('pr')}</span></div>`;
+}
+function tabsL() {
+  const t = (key, html) => `<div class="tab ${ST.view===key?'on':''}" data-go="${key}" style="cursor:pointer">${html}</div>`;
+  return `<div class="tabs">${t('kan', ic('kan') + 'Канбан')}${t('Дебиторка', pv('claude','run') + 'Дебиторка')}${t('Общий ИИ', pv('claude','att') + 'Общий ИИ')}${t('Тендер', pv('claude','') + 'Тендер')}<div class="tab plus">${ic('plus')}</div><span class="sp"></span>${ic('dots')}</div>`;
+}
+function archiveL() {
+  const total = ARCH.reduce((n, c) => n + c.tasks.length, 0);
+  const head = `<div class="archrow" data-arch="1" style="cursor:pointer">${chev(ST.archOpen)}${ic('arch')}<span>Архив</span><span class="sp"></span><span class="n">${total} задач из ${ARCH.length} архивных чатов</span></div>`;
+  if (!ST.archOpen) return head;
+  return head + `<div class="col" style="gap:2px;padding:6px">${ARCH.map(c => `
+    <div class="ar" data-archchat="${c.chat}" style="cursor:pointer">${chev(ST.archChat===c.chat)}${L[c.p]}<span>${c.chat}</span><span class="sp"></span><span class="t2">${c.tasks.length} задачи · ${c.date}</span></div>
+    ${ST.archChat===c.chat ? c.tasks.map(([t, s]) => `<div class="ar sub"><span>${t}</span><span class="sp"></span><span class="pill2">${s}</span></div>`).join('') : ''}`).join('')}</div>`;
+}
+function boardL() {
+  const n = TASKS.filter(x => x.col !== 'done').length;
+  return `<div class="board" style="overflow:auto">
+    <div class="bhead"><h2>ЭкоЭксперт</h2><span class="s">${TASKS.length} задач в 3 чатах · ${needCount()} ждут тебя</span></div>
+    <div class="cols">${COLS.map(([k, name, dot]) => { const list = TASKS.filter(x => x.col === k); return `<div class="col"><div class="colh"><i class="dot" style="background:${dot}"></i>${name}<span class="n">${list.length}</span></div>${list.map(x => cardL(x, false)).join('')}</div>`; }).join('')}</div>
+    ${archiveL()}<div style="height:16px"></div></div>`;
+}
+function explorerL(chat) {
+  const mine = TASKS.filter(x => x.chat === chat);
+  const sec = (k, name) => { const l = mine.filter(x => x.col === k); return l.length ? `<div class="sec">${mini(k==='done'?'att':k)}${name}<span class="n">${l.length}</span></div>${l.map(x => cardL(x, true)).join('')}` : ''; };
+  return `<aside class="exp">
+    <div class="exph"><div class="tab">${ic('file')}Файлы</div><div class="tab">${ic('diff')}Изменения</div><div class="tab on">${ic('kan')}Канбан</div><span class="sp"></span><span data-exp="close" style="cursor:pointer;display:inline-flex">${ic('x')}</span></div>
+    <div class="expb" style="overflow:auto"><div class="ptitle"><b>${chat}</b><span>${mine.length} карточки этого чата</span></div>
+      ${mine.length ? sec('run','В работе') + sec('need','Нужен ты') + sec('q','Очередь') + sec('done','Готово') : '<div class="now" style="color:var(--fg3);padding:2px">Пока карточек нет. Появятся, когда агент перейдёт к реализации.</div>'}
+    </div></aside>`;
+}
+const CHATS = {
+  'Дебиторка': `<div class="msg">Сверил вид виджета с оригиналом AMGROUP по снимкам: шапка, итог и кнопки совпадают. Осталось поле "Просрочено" - для него нужен ответ, какие этапы считать просроченными.</div><div class="meta">${ic('copy')}${ic('branch')}<span>Время работы: 6m 10s</span></div>`,
+  'Общий ИИ': `<div class="msg">Отчёт по звонкам за октябрь собран: 412 звонков, 38 без ответа, разбивка по менеджерам. Файл лежит в outbox, отправлю после твоего "лей".</div><div class="meta">${ic('copy')}${ic('branch')}<span>Время работы: 2m 41s</span></div>`,
+};
+function chatL(chat) {
+  if (chat === 'Тендер') return chatTender(ST.auto);
+  return `<div class="chat">${CHATS[chat]}</div>${composer()}`;
+}
+function modalL() {
+  const x = TASKS.find(t => t.id === ST.modal); if (!x) return '';
+  const label = {q:'Очередь', run:'В работе', need:'Нужен ты', done:'Готово'}[x.col];
+  return `<div class="dim" data-close="1"><div class="big" data-stop="1">
+    <div class="top"><span class="status">${mini(stOf(x))}${label}</span><span>ЭкоЭксперт</span><span class="sp"></span><span data-close="1" style="cursor:pointer;display:inline-flex">${ic('x')}</span></div>
+    <h3>${x.t}</h3>
+    <div class="fld"><div class="k">Сейчас</div><div class="v">${x.now}</div></div>
+    ${x.need ? `<div class="fld"><div class="k">От тебя</div><div class="need">${x.need[0].toUpperCase() + x.need.slice(1)}</div></div>
+    <div class="reply"><input class="in" id="reply" placeholder="Ответить ${ST.reading==='A'?'исполнителю':'в чат'}..." style="outline:none;font:inherit;color:var(--fg)"><span class="btn pri" data-reply="${x.id}" style="cursor:pointer">${ic('send')}Отправить</span></div>` : ''}
+    <div class="whobox">${pv(x.p||'claude', stOf(x)==='done'?'':stOf(x)==='q'?'':stOf(x))}<div><div class="w1">${ST.reading==='A'?x.exec:'Чат '+x.chat}</div><div class="w2">${ST.reading==='A'?'исполнитель · из чата '+x.chat:'карточка ведётся в этом чате'}</div></div><span class="sp"></span><span class="btn" data-open="${x.chat}" style="cursor:pointer">${ic('open')}Открыть чат</span></div>
+  </div></div>`;
+}
+function render() {
+  const main = ST.view === 'kan'
+    ? `<div class="body">${boardL()}</div>`
+    : `<div class="body"><div class="pane">${chatL(ST.view)}</div>${ST.exp ? explorerL(ST.view) : ''}</div>`;
+  document.getElementById('live').innerHTML = sidebarL() + `<main class="main">${topbarL()}${tabsL()}${main}${modalL()}</main>`;
+  document.querySelectorAll('[data-rd]').forEach(b => b.classList.toggle('on', b.dataset.rd === ST.reading));
+}
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-go],[data-card],[data-arch],[data-archchat],[data-exp],[data-close],[data-reply],[data-open],[data-rd],[data-act],[data-stop]');
+  if (!el) return;
+  const d = el.dataset;
+  if (d.stop !== undefined && !e.target.closest('[data-close],[data-reply],[data-open]')) return;
+  if (d.go) { ST.view = d.go; ST.flash = null; }
+  else if (d.card) { ST.modal = +d.card; }
+  else if (d.arch) { ST.archOpen = !ST.archOpen; }
+  else if (d.archchat) { ST.archChat = ST.archChat === d.archchat ? null : d.archchat; }
+  else if (d.exp) { ST.exp = d.exp === 'close' ? false : !ST.exp; }
+  else if (d.reply) {
+    const x = TASKS.find(t => t.id === +d.reply);
+    x.col = 'run'; x.now = 'получил твой ответ, продолжает работу'; delete x.need; x.tm = 'сейчас'; ST.modal = null;
+  }
+  else if (d.open) { ST.view = d.open; ST.modal = null; ST.exp = true; }
+  else if (d.close) { ST.modal = null; }
+  else if (d.rd) { ST.reading = d.rd; }
+  else if (d.act === 'auto') {
+    if (!ST.auto) { TASKS.unshift({id:10, t:'Срок подачи тендера в задачу менеджеру', col:'run', now:'изучает, где в письме тендера срок подачи', exec:'Срок подачи', chat:'Тендер', tm:'сейчас'}); }
+    ST.auto = true; ST.view = 'Тендер'; ST.exp = false; render();
+    setTimeout(() => { ST.exp = true; ST.flash = 10; render(); }, 700);
+    return;
+  }
+  else if (d.act === 'reset') { resetTasks(); Object.assign(ST, { view: 'kan', exp: true, archOpen: false, archChat: 'СПАМ ЭЭ', modal: null, auto: false, flash: null }); }
+  render();
+});
+render();
+
+</script>
+</body>
+</html>
