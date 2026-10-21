@@ -332,7 +332,8 @@ export function ChatView({
   navigation,
   fixedAgentId,
   onOpenCard,
-}: ViewProps & { fixedAgentId?: string; onOpenCard?: (card: Card) => void }) {
+  sheet = false,
+}: ViewProps & { fixedAgentId?: string; onOpenCard?: (card: Card) => void; sheet?: boolean }) {
   const p = palette(theme);
   const { cards, agents, loading } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
@@ -359,10 +360,16 @@ export function ChatView({
     <DetailedCard key={c.id} card={c} inChat showStatus={false} details={prefs.details} hostId={host.id} onPress={() => open(c)} p={p} />
   );
   return (
-    <ScrollView testID="kanban-chat" style={{ flex: 1 }} contentContainerStyle={{ padding: 14 }}>
-      <T color={p.fg3} size={12} style={{ paddingHorizontal: 2, paddingBottom: 4 }}>
-        {chat ? `Чат ${chat.title || "без названия"}` : "Выберите вкладку чата"}
-      </T>
+    <ScrollView
+      testID="kanban-chat"
+      style={sheet ? { flexGrow: 0 } : { flex: 1 }}
+      contentContainerStyle={sheet ? { paddingBottom: 6 } : { padding: 14 }}
+    >
+      {sheet ? null : (
+        <T color={p.fg3} size={12} style={{ paddingHorizontal: 2, paddingBottom: 4 }}>
+          {chat ? `Чат ${chat.title || "без названия"}` : "Выберите вкладку чата"}
+        </T>
+      )}
       {CHAT_ORDER.map((col) => {
         const list = sortCards(
           live.filter((c) => c.col === col),
@@ -372,7 +379,7 @@ export function ChatView({
         const isOpen = !prefs.toggled[key];
         return (
           <View key={col}>
-            <GroupHeader label={STATUS[col]} count={list.length} open={isOpen} col={col} onPress={() => toggle(key)} p={p} />
+            <GroupHeader label={STATUS[col]} count={list.length} open={isOpen} col={col} dense={sheet} onPress={() => toggle(key)} p={p} />
             {isOpen ? list.map(card) : null}
           </View>
         );

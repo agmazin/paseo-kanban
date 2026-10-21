@@ -114,6 +114,7 @@ export function GroupHeader({
   open,
   col,
   archive,
+  dense,
   onPress,
   p,
   testID,
@@ -123,6 +124,7 @@ export function GroupHeader({
   open: boolean;
   col?: Col | null;
   archive?: boolean;
+  dense?: boolean;
   onPress(): void;
   p: Palette;
   testID?: string;
@@ -133,7 +135,7 @@ export function GroupHeader({
       accessibilityRole="button"
       accessibilityLabel={`${label}, ${count}, ${open ? "свернуть" : "развернуть"}`}
       onPress={onPress}
-      style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingTop: 7, paddingBottom: 6, paddingHorizontal: 2 }}
+      style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingTop: dense ? 4 : 7, paddingBottom: dense ? 4 : 6, paddingHorizontal: 2 }}
     >
       <Chevron open={open} p={p} />
       {col ? <Dot col={col} p={p} /> : null}

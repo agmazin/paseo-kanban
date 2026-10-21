@@ -40,12 +40,14 @@
 
 0.1.8 (22.10.2026): табы в окне на телефоне убраны по просьбе Александра - в чат возвращает смахивание листа вниз.
 
+0.1.9 (22.10.2026): лист на телефоне плотнее - без подписи "Чат ...", карточки по краю заголовка листа, плотнее заголовки групп, высота по содержимому (не больше 80% экрана).
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.8 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.1.9 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

@@ -7,14 +7,15 @@ import { palette, T } from "./ui";
 // Phone: the chat kanban opens as a sheet over the chat; swiping it down returns to the chat.
 export function overlayFor(client: PluginClientContext, workspaceId: string, chatId: string) {
   return function KanbanOverlay({ theme, host, close }: PluginButtonContentProps) {
-    const height = Math.round(Dimensions.get("window").height * 0.8);
+    const maxHeight = Math.round(Dimensions.get("window").height * 0.8);
     return (
-      <View testID="kanban-overlay" style={{ height, width: "100%" }}>
+      <View testID="kanban-overlay" style={{ maxHeight, width: "100%" }}>
         <ChatView
           workspaceId={workspaceId}
           theme={theme}
           host={host}
           fixedAgentId={chatId}
+          sheet
           onOpenCard={(card) => {
             close();
             client.openScreen({ screenId: "open-agent", params: { agentId: card.id, at: String(Date.now()) } });
