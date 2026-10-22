@@ -97,7 +97,7 @@
 повторной записи не вызывает. Запись - `paseo agent update --name --label` через тот же CLI, от давно изменённых к
 недавним: переименование сдвигает дату изменения, а так порядок в Диалогах и на доске сохраняется. На карточке номер
 отдельной строкой под датой, над названием, серым; название без номера. Сухой прогон - `tests/keys-dry-run.mts`
-(`docs/keys-dry-run.md`), сценарии - `tests/keys.test.mts`, `tests/browser/flow17.mjs`.
+(`docs/keys-dry-run.md`), сценарии - `tests/keys.test.mts`, `tests/browser/flow17.mjs`. Снимки: основная Paseo (вкладки, Диалоги, правая панель) - `docs/verification/keys-0.3-main.png`, доска тестового демона - `docs/verification/keys-0.3-test-board.png`.
 
 ## Установка и обновление
 
