@@ -150,10 +150,75 @@ test("new workspace prefixes: three Latin letters, unique", () => {
 });
 
 test("title helpers and the card shows the key apart", () => {
-  assert.equal(bareTitle("AGM-1-2: AGM-1-2: Имя", "AGM-1-2", null, ["AGM"]), "Имя");
-  assert.equal(bareTitle("AGM-1: Имя", "AGM-1-2", null, ["AGM"]), "AGM-1: Имя");
+  assert.equal(bareTitle("AGM-1-2: AGM-1-2: Имя", ["AGM-1-2", null], ["AGM"]), "Имя");
+  assert.equal(bareTitle("AGM-1: Имя", ["AGM-1-2", null], ["AGM"]), "AGM-1: Имя");
   assert.equal(multicaKey("AGM-1-2: x", ["AGM"]), null);
   const [c] = cardsOf([chat("c1", "AGM-1: Чат"), card("k", "c1", "AGM-1-1: Задача", { labels: { "kanban.key": "AGM-1-1" } })]);
   assert.equal(c.key, "AGM-1-1");
   assert.equal(c.title, "Задача");
+});
+
+test("a chat moved to another workspace: next number there, cards keep their own numbers, old keys in prev-key", () => {
+  const agents = [
+    chat("e1", "Сайт", { workspaceId: "w2" }),
+    chat("c1", "Один"),
+    chat("c2", "geoexpert-msk.ru"),
+    card("k1", "c2", "Картинки"),
+    card("k2", "c2", "Архивная", { archivedAt: "x" }),
+    card("n1", "k2", "Вложенный"),
+  ];
+  const first = planKeys(agents, ws, EMPTY_KEYS);
+  let now = apply(agents, first.changes);
+  assert.equal(now.find((a) => a.id === "c2").title, "AGM-2: geoexpert-msk.ru");
+  // Dialogs move c2 to ЭкоЭксперт: same id, new workspace, labels and title kept; the cards stay where they were.
+  now = now.map((a) => (a.id === "c2" ? { ...a, workspaceId: "w2" } : a));
+  const plan = planKeys(now, ws, first.state);
+  const by = Object.fromEntries(plan.changes.map((c) => [c.id, [c.title, c.labels]]));
+  assert.deepEqual(by, {
+    c2: ["ECO-2: geoexpert-msk.ru", { "kanban.key": "ECO-2", "kanban.prev-key": "AGM-2" }],
+    k1: ["ECO-2-1: Картинки", { "kanban.key": "ECO-2-1", "kanban.prev-key": "AGM-2-1" }],
+    k2: ["ECO-2-2: Архивная", { "kanban.key": "ECO-2-2", "kanban.prev-key": "AGM-2-2" }],
+    n1: ["ECO-2-2-1: Вложенный", { "kanban.key": "ECO-2-2-1", "kanban.prev-key": "AGM-2-2-1" }],
+  });
+  assert.deepEqual(plan.state.prefixes, { w2: "ECO", w1: "AGM" });
+  now = apply(now, plan.changes);
+  assert.deepEqual(planKeys(now, ws, plan.state).changes, []);
+  // A new card of the moved chat continues its numbers; AGM-2 is never handed out again.
+  now.push(card("k3", "c2", "Новая"), chat("c3", "Три"));
+  const after = planKeys(now, ws, plan.state);
+  assert.deepEqual(after.changes.map((c) => c.title), ["ECO-2-3: Новая", "AGM-3: Три"]);
+});
+
+test("moved there and back: the next free number again, not the old one; a failed write does not renumber twice", () => {
+  const agents = [chat("c1", "Чат"), card("k1", "c1", "Карточка"), chat("e1", "Эко", { workspaceId: "w2" })];
+  const first = planKeys(agents, ws, EMPTY_KEYS);
+  let now = apply(agents, first.changes).map((a) => (a.id === "c1" ? { ...a, workspaceId: "w2" } : a));
+  const there = planKeys(now, ws, first.state);
+  // The writes failed: the labels still say AGM-1, the state remembers ECO-2.
+  const again = planKeys(now, ws, there.state);
+  assert.deepEqual(again.changes.map((c) => c.key), ["ECO-2", "ECO-2-1"]);
+  now = apply(now, there.changes).map((a) => (a.id === "c1" ? { ...a, workspaceId: "w1" } : a));
+  const back = planKeys(now, ws, there.state);
+  const by = Object.fromEntries(back.changes.map((c) => [c.id, [c.title, c.labels]]));
+  assert.deepEqual(by, {
+    c1: ["AGM-2: Чат", { "kanban.key": "AGM-2", "kanban.prev-key": "AGM-1;ECO-2" }],
+    k1: ["AGM-2-1: Карточка", { "kanban.key": "AGM-2-1", "kanban.prev-key": "AGM-1-1;ECO-2-1" }],
+  });
+  assert.deepEqual(planKeys(apply(now, back.changes), ws, back.state).changes, []);
+});
+
+test("moved to a new workspace without a prefix: it gets its own, not the one the chat brought", () => {
+  const wss = [...ws, { id: "w9", name: "Ремонт" }];
+  const agents = [chat("c1", "Кухня"), card("k1", "c1", "Плитка")];
+  const first = planKeys(agents, wss, EMPTY_KEYS);
+  const now = apply(agents, first.changes).map((a) => (a.id === "c1" ? { ...a, workspaceId: "w9" } : a));
+  // The state file was lost too: the prefix of w1 is learned from c1's card-less neighbours only.
+  for (const state of [first.state, EMPTY_KEYS]) {
+    const plan = planKeys([...now, chat("c2", "AGM-2: Другой", { labels: { "kanban.key": "AGM-2" } })], wss, state);
+    assert.equal(plan.state.prefixes.w9, "REM");
+    const c1 = plan.changes.find((c) => c.id === "c1")!;
+    assert.equal(c1.title, "REM-1: Кухня");
+    assert.equal(plan.changes.find((c) => c.id === "k1")!.title, "REM-1-1: Плитка");
+    assert.equal(plan.state.last.AGM, 2);
+  }
 });
