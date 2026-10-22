@@ -222,3 +222,15 @@ test("moved to a new workspace without a prefix: it gets its own, not the one th
     assert.equal(plan.state.last.AGM, 2);
   }
 });
+
+test("a card detached for a moment during a move keeps its card key", () => {
+  const agents = [chat("c1", "Чат"), card("k1", "c1", "Карточка")];
+  const first = planKeys(agents, ws, EMPTY_KEYS);
+  // The chat moved to ЭкоЭксперт, its card in agmazin lost the parent label until Dialogs give it back.
+  let now = apply(agents, first.changes).map((a) => (a.id === "c1" ? { ...a, workspaceId: "w2" } : a));
+  const mid = planKeys(now.map((a) => (a.id === "k1" ? { ...a, parentAgentId: null } : a)), ws, first.state);
+  assert.deepEqual(mid.changes.map((c) => [c.id, c.key]), [["c1", "ECO-1"]]);
+  now = apply(now, mid.changes);
+  const back = planKeys(now, ws, mid.state);
+  assert.deepEqual(back.changes.map((c) => [c.id, c.title]), [["k1", "ECO-1-1: Карточка"]]);
+});

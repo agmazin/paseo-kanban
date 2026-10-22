@@ -94,6 +94,12 @@
 тестовом демоне настоящим переносом `dialogs.move`: CTG-16 с двумя карточками -> ECO-7, ECO-7-1, ECO-7-2 -> обратно
 CTG-17, CTG-17-1, CTG-17-2. Диалоги переносят только между пространствами одного каталога.
 
+0.3.3 (22.10.2026): на время переноса Paseo отвязывает карточки чата из другого пространства (Диалоги 0.8.2 потом
+возвращают метку родителя). Чат с ключом карточки ("ECO-10-1") больше не считается перенесённым и не получает номер
+чата; карточка, у которой префикс не совпал с ключом родителя, приводится под него (AGM-8-1 под ECO-10 -> ECO-10-1),
+занятый номер - следующий свободный. Проверено на тестовом демоне с Диалогами 0.8.2: туда ECO-10, ECO-10-1, ECO-10-2,
+обратно CTG-23, CTG-23-1, CTG-23-2, карточки не архивные.
+
 0.3.0 (22.10.2026): номера чатов и карточек, чтобы во вкладках сразу было видно, где чат, а где подагент: "AGM-1: Paseo
 Канбан" - чат, "AGM-1-1: Кнопки приёмки" - его карточка, "AGM-1-1-1" - подагент карточки. Префикс - пространство
 (agmazin AGM, ЭкоЭксперт ECO, CTG CTG, otchetico OTC; новое - три латинские буквы из имени транслитом, уникально;
@@ -115,7 +121,7 @@ CTG-17, CTG-17-1, CTG-17-2. Диалоги переносят только ме�
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.3.2 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.3.3 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

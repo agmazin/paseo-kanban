@@ -183,8 +183,9 @@ export function planKeys(agents: readonly AgentLike[], workspaces: readonly Work
   const renamed = new Map<string, string>();
   const moved = agents.filter((a) => !parentOf(a) && !a.archivedAt && a.workspaceId && keyOf.has(a.id)).sort(byCreated);
   for (const a of moved) {
-    const old = keyOf.get(a.id)!;
-    if (parseKey(old)!.prefix === prefixOf(a.workspaceId!)) continue;
+    const old = parseKey(keyOf.get(a.id))!;
+    // A card key on a chat is a card detached for a moment (Dialogs archive its chat during a move): not a move.
+    if (old.nums.length !== 1 || old.prefix === prefixOf(a.workspaceId!)) continue;
     renamed.set(a.id, next(prefixOf(a.workspaceId!)));
   }
   const children = new Map<string, AgentLike[]>();
@@ -192,27 +193,26 @@ export function planKeys(agents: readonly AgentLike[], workspaces: readonly Work
     const p = parentOf(a);
     if (p) children.set(p, [...(children.get(p) ?? []), a]);
   }
-  const walk = [...renamed.keys()];
+  // Cards follow a renamed parent; a card left with another prefix (detached while its chat moved) is brought under it.
+  const walk = agents.filter((a) => !parentOf(a) && keyOf.has(a.id)).map((a) => a.id);
   while (walk.length) {
     const id = walk.shift()!;
-    const parentKey = renamed.get(id)!;
+    const parentKey = renamed.get(id) ?? keyOf.get(id)!;
     for (const c of (children.get(id) ?? []).sort(byCreated)) {
+      walk.push(c.id);
       const old = keyOf.get(c.id);
       if (!old || renamed.has(c.id)) continue;
-      const n = parseKey(old)!.n;
-      if (n > (state.last[parentKey] ?? 0)) state.last[parentKey] = n;
-      renamed.set(c.id, `${parentKey}-${n}`);
-      walk.push(c.id);
+      const p = parseKey(old)!;
+      if (!renamed.has(id) && p.prefix === parseKey(parentKey)!.prefix) continue;
+      if (p.n > (state.last[parentKey] ?? 0)) state.last[parentKey] = p.n;
+      renamed.set(c.id, `${parentKey}-${p.n}`);
     }
   }
-  // A clash of own numbers under one parent (copied keys) takes the next free one.
-  const used = new Set<string>();
+  // A clash with a number in use (copied keys, a card made meanwhile) takes the next free one.
+  const used = new Set([...keyOf].filter(([id]) => !renamed.has(id)).map(([, k]) => k));
   for (const [id, k] of renamed) {
     let key = k;
-    if (used.has(key)) {
-      const scope = key.slice(0, key.lastIndexOf("-"));
-      key = next(scope);
-    }
+    if (used.has(key)) key = next(key.slice(0, key.lastIndexOf("-")));
     used.add(key);
     const old = keyOf.get(id)!;
     addPrev(id, old);
