@@ -100,6 +100,11 @@ CTG-17, CTG-17-1, CTG-17-2. Диалоги переносят только ме�
 занятый номер - следующий свободный. Проверено на тестовом демоне с Диалогами 0.8.2: туда ECO-10, ECO-10-1, ECO-10-2,
 обратно CTG-23, CTG-23-1, CTG-23-2, карточки не архивные.
 
+0.3.4 (22.10.2026): на телефоне до последних карточек чата снова можно долистать. Лист Paseo ограничен 80% экрана и
+сверху добавляет свой заголовок, а внутренний список был высотой 80% экрана со своей прокруткой: его низ уходил за край
+листа (пример - ЭЭ: Телефония). Теперь в листе одна прокрутка - самого Paseo, а 80% экрана - минимальная высота, лист
+по-прежнему одной высоты. Проверка - `tests/browser/mobile-scroll-end.mjs`.
+
 0.3.0 (22.10.2026): номера чатов и карточек, чтобы во вкладках сразу было видно, где чат, а где подагент: "AGM-1: Paseo
 Канбан" - чат, "AGM-1-1: Кнопки приёмки" - его карточка, "AGM-1-1-1" - подагент карточки. Префикс - пространство
 (agmazin AGM, ЭкоЭксперт ECO, CTG CTG, otchetico OTC; новое - три латинские буквы из имени транслитом, уникально;
@@ -121,7 +126,7 @@ CTG-17, CTG-17-1, CTG-17-2. Диалоги переносят только ме�
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.3.3 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.3.4 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

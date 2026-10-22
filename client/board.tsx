@@ -462,8 +462,14 @@ export function ChatView({
   const more = (
     <ToolButton testID="kanban-chat-menu" icon="Ellipsis" label="Настройки панели" active={!!menu} onPress={() => setMenu(menu ? null : "main")} p={p} />
   );
+  // On the phone the host sheet scrolls by itself (it is capped at 80% of the screen and adds its own title):
+  // a second scroller inside could not bring the last cards above the sheet's bottom edge.
+  const Body = sheet ? View : ScrollView;
+  const bodyProps = sheet
+    ? { style: { paddingBottom: 6 } }
+    : { style: { flex: 1 }, contentContainerStyle: { paddingHorizontal: 14, paddingBottom: 14 } };
   return (
-    <View style={{ flex: 1 }}>
+    <View style={sheet ? undefined : { flex: 1 }}>
       {sheet ? (
         <View style={{ position: "absolute", top: -3, right: 0, zIndex: 10 }}>{more}</View>
       ) : (
@@ -475,7 +481,7 @@ export function ChatView({
           {more}
         </View>
       )}
-      <ScrollView testID="kanban-chat" style={{ flex: 1 }} contentContainerStyle={sheet ? { paddingBottom: 6 } : { paddingHorizontal: 14, paddingBottom: 14 }}>
+      <Body testID="kanban-chat" {...bodyProps}>
         {groups.map((col) => {
           const list = sortCards(
             live.filter((c) => c.col === col),
@@ -502,7 +508,7 @@ export function ChatView({
             {prefs.toggled["p|arch"] ? sortCards(arch, order).map(card) : null}
           </View>
         ) : null}
-      </ScrollView>
+      </Body>
       {menu ? (
         <Pressable
           accessibilityLabel="Закрыть меню"

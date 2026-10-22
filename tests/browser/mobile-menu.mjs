@@ -5,7 +5,7 @@ const p = await b.newPage({ viewport: { width: 390, height: 844 }, colorScheme: 
 p.on('pageerror', (e) => console.log('pageerror:', e.message.slice(0, 300)));
 await p.goto('http://127.0.0.1:6786'); await p.waitForTimeout(2500);
 await p.getByLabel('Открыть меню').click(); await p.waitForTimeout(800);
-await p.getByText('Дебиторка', { exact: true }).first().click(); await p.waitForTimeout(2500);
+await p.getByText('Дебиторка', { exact: false }).first().click(); await p.waitForTimeout(2500);
 await p.getByRole('button', { name: 'Канбан чата' }).first().click(); await p.waitForTimeout(2500);
 await p.screenshot({ path: '/tmp/kbt/66-sheet.png' });
 await p.getByTestId('kanban-chat-menu').click(); await p.waitForTimeout(500);

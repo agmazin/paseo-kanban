@@ -5,7 +5,7 @@ const p = await b.newPage({ viewport: { width: 1440, height: 900 }, colorScheme:
 p.on('pageerror', (e) => console.log('pageerror:', e.message.slice(0, 300)));
 const panel = '[data-testid="workspace-explorer-sidebar"]:visible';
 await p.goto('http://127.0.0.1:6786'); await p.waitForTimeout(2500);
-await p.getByText('Дебиторка', { exact: true }).first().click(); await p.waitForTimeout(2000);
+await p.getByText('Дебиторка', { exact: false }).first().click(); await p.waitForTimeout(2000);
 if (!(await p.locator(panel).count())) { await p.getByTestId('workspace-explorer-toggle').first().click(); await p.waitForTimeout(1500); }
 await p.locator(`${panel} [data-testid*="paseo-kanban"]`).first().click(); await p.waitForTimeout(2500);
 const groups = () => p.evaluate(() => [...document.querySelectorAll('[data-testid="kanban-chat"] [role="button"][aria-label*="свернуть"], [data-testid="kanban-chat"] [role="button"][aria-label*="развернуть"]')].map((n) => n.getAttribute('aria-label').split(',')[0]).join(' > '));

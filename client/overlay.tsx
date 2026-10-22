@@ -7,10 +7,11 @@ import { palette, T } from "./ui";
 // Phone: the chat kanban opens as a sheet over the chat; swiping it down returns to the chat.
 export function overlayFor(client: PluginClientContext, workspaceId: string, chatId: string) {
   return function KanbanOverlay({ theme, host, close }: PluginButtonContentProps) {
-    // One fixed height whatever the number of cards (Alexander, 22.10.2026).
+    // One height whatever the number of cards (Alexander, 22.10.2026): the host sheet stops at 80% of the
+    // screen and scrolls the rest, so a minimum keeps it always at that height.
     const height = Math.round(Dimensions.get("window").height * 0.8);
     return (
-      <View testID="kanban-overlay" style={{ height, width: "100%" }}>
+      <View testID="kanban-overlay" style={{ minHeight: height, width: "100%" }}>
         <ChatView
           workspaceId={workspaceId}
           theme={theme}
