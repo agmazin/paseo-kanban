@@ -1,6 +1,7 @@
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import type { PaseoApi } from "@getpaseo/client";
 import { readFile, mkdir, rename, writeFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { execFile } from "node:child_process";
@@ -14,8 +15,12 @@ const directory = join(home, "plugin-data", "paseo-kanban");
 const path = join(directory, "state.json");
 const run = promisify(execFile);
 
+// Alexander's Mac has the CLI from Homebrew; the ЭкоЭксперт portal (Linux container) sets PASEO_BIN or has it in PATH.
+const MAC_BIN = "/opt/homebrew/bin/paseo";
+const bin = process.env.PASEO_BIN || (existsSync(MAC_BIN) ? MAC_BIN : "paseo");
+
 async function setMark(agentId: string, value: string) {
-  await run("/opt/homebrew/bin/paseo", ["agent", "update", agentId, "--label", `${LABEL}=${value}`, "--json", "--home", home], {
+  await run(bin, ["agent", "update", agentId, "--label", `${LABEL}=${value}`, "--json", "--home", home], {
     timeout: 10_000,
   });
 }
