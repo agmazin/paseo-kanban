@@ -8,6 +8,8 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
 import { accept, lastReply, prefsSchema, readCards, readPrefs, sanitizePrefs, savePrefs, sendBack } from "../shared/contracts";
+import { EMPTY_KEYS, type KeyChange, type KeysState } from "../shared/keys";
+import { keysReconciler } from "./keys";
 import { ACCEPTED, cardsOf, clearedOnTurn, DEFAULT_PREFS, LABEL, NEUTRAL, parentOf, providerOf, type AgentLike, type Prefs } from "../shared/model";
 
 const home = process.env.PASEO_HOME || join(homedir(), ".paseo");
@@ -23,6 +25,17 @@ async function setMark(agentId: string, value: string) {
   await run(bin, ["agent", "update", agentId, "--label", `${LABEL}=${value}`, "--json", "--home", home], {
     timeout: 10_000,
   });
+}
+
+async function writeKey(change: KeyChange) {
+  const args = ["agent", "update", change.id];
+  if (change.title) args.push("--name", change.title);
+  for (const [k, v] of Object.entries(change.labels)) args.push("--label", `${k}=${v}`);
+  await run(bin, [...args, "--json", "--home", home], { timeout: 10_000 });
+}
+
+async function listWorkspaces(paseo: PaseoApi) {
+  return (await paseo.workspaces.list({ page: { limit: 200 } })).entries.map((w) => ({ id: w.id, name: w.name, title: w.title }));
 }
 
 async function subagent(paseo: PaseoApi, agentId: string) {
@@ -66,17 +79,19 @@ export async function acceptCard(paseo: PaseoApi, agentId: string, mark = setMar
 
 export function register(server: PluginServerContext) {
   let prefs: Prefs = { ...DEFAULT_PREFS };
+  let keys: KeysState = { ...EMPTY_KEYS };
   let queue = Promise.resolve();
   const ready = (async () => {
     try {
       const saved = JSON.parse(await readFile(path, "utf8"));
       prefs = sanitizePrefs(saved.prefs, DEFAULT_PREFS);
+      if (saved.keys && typeof saved.keys === "object") keys = { ...EMPTY_KEYS, ...saved.keys };
     } catch (e) {
       if ((e as { code?: string }).code !== "ENOENT") console.error("Канбан: не удалось прочитать настройки вида");
     }
   })();
   const persist = () => {
-    const snapshot = JSON.stringify({ prefs }, null, 2);
+    const snapshot = JSON.stringify({ prefs, keys }, null, 2);
     queue = queue
       .then(async () => {
         await mkdir(directory, { recursive: true, mode: 0o700 });
@@ -87,6 +102,33 @@ export function register(server: PluginServerContext) {
       .catch(() => console.error("Канбан: не удалось сохранить настройки вида"));
     return queue;
   };
+
+  // Numbers of chats and cards (shared/keys.ts): on agent events and once a minute (a return from the archive has no event).
+  const numbers = keysReconciler({
+    list: async (paseo) => ({ agents: await listAgents(paseo, true), workspaces: await listWorkspaces(paseo) }),
+    write: writeKey,
+    load: () => keys,
+    save: async (state) => {
+      keys = state;
+      await persist();
+    },
+    log: (text) => console.log(text),
+  });
+  let soon: ReturnType<typeof setTimeout> | null = null;
+  const renumber = (paseo: PaseoApi, delay = 1500) => {
+    if (soon) clearTimeout(soon);
+    soon = setTimeout(() => {
+      soon = null;
+      void ready.then(() => numbers.run(paseo));
+    }, delay);
+  };
+  const minute = setInterval(() => {
+    const paseo = numbers.paseo();
+    if (paseo) renumber(paseo, 0);
+  }, 60_000);
+  const offKeys = (["agent.created", "agent.turn_started", "agent.turn_ended"] as const).map((name) =>
+    server.on(name, (_event, { paseo }) => renumber(paseo)),
+  );
 
   server.handle(readPrefs, async () => {
     await ready;
@@ -111,6 +153,7 @@ export function register(server: PluginServerContext) {
     return {};
   });
   server.handle(readCards, async ({ archived }, { paseo }) => {
+    if (!numbers.paseo()) renumber(paseo, 0);
     const agents = await listAgents(paseo, archived);
     const chats = agents
       .filter((a) => !parentOf(a) && !a.archivedAt && a.workspaceId)
@@ -140,6 +183,10 @@ export function register(server: PluginServerContext) {
   console.log("Канбан: сервер запущен");
   return async () => {
     offStarted();
+    offKeys.forEach((off) => off());
+    clearInterval(minute);
+    if (soon) clearTimeout(soon);
+    await numbers.idle();
     await queue;
   };
 }

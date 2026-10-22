@@ -81,12 +81,28 @@
 из PATH. Нужно порталу ЭкоЭксперта (Paseo в Linux-контейнере): там Homebrew нет, и новый ход не снимал метку с карточки.
 На Маке Александра поведение прежнее.
 
+0.3.0 (22.10.2026): номера чатов и карточек, чтобы во вкладках сразу было видно, где чат, а где подагент: "AGM-1: Paseo
+Канбан" - чат, "AGM-1-1: Кнопки приёмки" - его карточка, "AGM-1-1-1" - подагент карточки. Префикс - пространство
+(agmazin AGM, ЭкоЭксперт ECO, CTG CTG, otchetico OTC; новое - три латинские буквы из имени транслитом, уникально;
+одноимённые пространства делят префикс). Ставит сервер плагина (`shared/keys.ts`, `server/keys.ts`): метка
+`kanban.key` и префикс в названии, чатам - по порядку создания (`createdAt`) в пространстве, карточкам - по порядку
+внутри родителя, включая архивные и готовые. Архивные чаты не нумеруются, вернулся из архива - следующий номер.
+Номера не переиспользуются: счётчики и назначения в `state.json` (`keys`), при старте поднимаются до максимума из меток.
+Старый ключ Multica ("AGM-23: ...", "ECO-88 - ...", "ECO-52 ...") при первой нумерации уходит из названия в метку
+`multica.key`. Сверка - на создание агента, начало и конец хода и раз в минуту (возврат из архива событий не даёт), одной
+очередью; первая - после первого события или запроса карточек. Переименование (автоназвание Paseo, `--name` агента)
+возвращает префикс; правка идемпотентна (название уже с нужным номером не трогается), поэтому своё переименование
+повторной записи не вызывает. Запись - `paseo agent update --name --label` через тот же CLI, от давно изменённых к
+недавним: переименование сдвигает дату изменения, а так порядок в Диалогах и на доске сохраняется. На карточке номер
+отдельной строкой под датой, над названием, серым; название без номера. Сухой прогон - `tests/keys-dry-run.mts`
+(`docs/keys-dry-run.md`), сценарии - `tests/keys.test.mts`, `tests/browser/flow17.mjs`.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.2.1 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.3.0 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

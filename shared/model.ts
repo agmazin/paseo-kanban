@@ -20,6 +20,13 @@ export const MARKS = ["queue", "review", "done", "ask"] as const;
 // A new executor turn keeps this mark (the chat may send the executor more work).
 export const ACCEPTED = "accepted";
 export const NEUTRAL = "work";
+// Number of a chat or card ("AGM-1", "AGM-1-2"), set by the plugin server (shared/keys.ts).
+export const KEY_LABEL = "kanban.key";
+
+export function splitTitle(title: string, key?: string | null) {
+  if (key && title.startsWith(`${key}: `)) return { key, name: title.slice(key.length + 2) };
+  return { key: key ?? null, name: title };
+}
 
 // A new executor turn returns a marked card to work, except an accepted one: it lives until the chat sets done.
 export function clearedOnTurn(mark?: string | null) {
@@ -54,6 +61,8 @@ export interface Owner {
 export interface Card {
   id: string;
   workspaceId: string;
+  // Number of the card ("AGM-1-2"), shown above the title; the title comes without it.
+  key: string | null;
   title: string;
   col: Col;
   archived: boolean;
@@ -115,10 +124,12 @@ export function cardsOf(agents: readonly AgentLike[]): Card[] {
     const parentId = parentOf(a);
     if (!parentId || !a.workspaceId) continue;
     const parent = byId.get(parentId) ?? null;
+    const key = a.labels?.[KEY_LABEL] || null;
     cards.push({
       id: a.id,
       workspaceId: a.workspaceId,
-      title: a.title?.trim() || "Без названия",
+      key,
+      title: splitTitle(a.title?.trim() || "", key).name || "Без названия",
       col: columnOf(a, parent),
       archived: !!a.archivedAt,
       provider: providerOf(a.provider),

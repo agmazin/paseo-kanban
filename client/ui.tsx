@@ -227,7 +227,7 @@ export function CardView({
     <Pressable
       testID={`kanban-card-${card.id}`}
       accessibilityRole="button"
-      accessibilityLabel={`${card.title}. ${STATUS[card.col]}. Открыть диалог исполнителя`}
+      accessibilityLabel={`${card.key ? `${card.key} ` : ""}${card.title}. ${STATUS[card.col]}. Открыть диалог исполнителя`}
       onPress={onPress}
       onHoverIn={() => setHover(true)}
       onHoverOut={() => setHover(false)}
@@ -250,6 +250,11 @@ export function CardView({
           </View>
         ) : null}
       </View>
+      {card.key ? (
+        <T color={p.fg3} size={11.5} style={{ marginBottom: 2 }}>
+          {card.key}
+        </T>
+      ) : null}
       <T color={faded ? p.fg3 : p.fg} size={13.5} lines={4}>
         {card.title}
       </T>

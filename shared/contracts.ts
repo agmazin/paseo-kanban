@@ -56,6 +56,7 @@ export const lastReply = defineRpc({
 const cardSchema = z.object({
   id: z.string(),
   workspaceId: z.string(),
+  key: z.string().nullable(),
   title: z.string(),
   col: z.enum(["q", "run", "need", "acc", "done"]),
   archived: z.boolean(),
