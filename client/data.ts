@@ -1,9 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import { usePaseo, useRpc } from "@getpaseo/plugin/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { PaseoApi, PaseoAgent } from "@getpaseo/client";
-import { readPrefs, savePrefs } from "../shared/contracts";
-import { cardsOf, DEFAULT_PREFS, type Prefs } from "../shared/model";
+import { readCards, readPrefs, savePrefs } from "../shared/contracts";
+import { DEFAULT_PREFS, type Prefs } from "../shared/model";
 
 export async function allAgents(paseo: PaseoApi, includeArchived = true) {
   let cursor: string | undefined;
@@ -19,51 +19,34 @@ export async function allAgents(paseo: PaseoApi, includeArchived = true) {
   return all;
 }
 
+// Listens to the events of the plugin's single agent subscription (opened by the observer);
+// a subscription per panel would make the daemon send every event once more.
+export function onAgentEvents(paseo: PaseoApi, fn: () => void, delay = 800) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const off = paseo.agents.subscribe(() => {
+    if (!timer) timer = setTimeout(() => ((timer = undefined), fn()), delay);
+  });
+  return () => {
+    off();
+    if (timer) clearTimeout(timer);
+  };
+}
+
 export function useCards(hostId: string) {
   const paseo = usePaseo();
   const qc = useQueryClient();
-  const key = ["kanban-agents", hostId];
+  const read = useRpc(readCards);
+  const key = ["kanban-cards", hostId];
+  // Built on the daemon machine: a few KB instead of every agent snapshot with the archive.
   const query = useQuery({
     queryKey: key,
-    queryFn: () => allAgents(paseo),
+    queryFn: () => read({ archived: true }),
     refetchInterval: 60_000,
     staleTime: 30_000,
   });
-  // Agent events carry the snapshot: patch the cached list instead of refetching every agent.
-  useEffect(() => {
-    let alive = true;
-    let release: (() => void) | undefined;
-    paseo.agents
-      .list({ filter: { includeArchived: true }, page: { limit: 1 }, subscribe: {} })
-      .then((r) => {
-        if (!alive) return r.subscription.release();
-        r.subscription.subscribe({
-          snapshot: () => void qc.invalidateQueries({ queryKey: key }),
-          update: (message) => {
-            if (message.type !== "agent_update") return;
-            const update = message.payload;
-            qc.setQueryData<PaseoAgent[]>(key, (old) => {
-              if (!old) return old;
-              if (update.kind !== "upsert") return old.filter((a) => a.id !== update.agentId);
-              const i = old.findIndex((a) => a.id === update.agent.id);
-              if (i < 0) return [...old, update.agent];
-              const next = old.slice();
-              next[i] = update.agent;
-              return next;
-            });
-          },
-        });
-        release = () => r.subscription.release();
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-      release?.();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paseo, qc, hostId]);
-  const cards = useMemo(() => cardsOf(query.data ?? []), [query.data]);
-  return { cards, agents: query.data ?? [], loading: query.isLoading, error: query.error };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => onAgentEvents(paseo, () => void qc.invalidateQueries({ queryKey: key })), [paseo, qc, hostId]);
+  return { cards: query.data?.cards ?? [], chats: query.data?.chats ?? [], loading: query.isLoading, error: query.error };
 }
 
 export function usePrefs(hostId: string) {

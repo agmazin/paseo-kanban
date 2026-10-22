@@ -39,3 +39,25 @@ export const lastReply = defineRpc({
   input: z.object({ agentId: z.string().min(1) }),
   output: z.object({ text: z.string() }),
 });
+
+const cardSchema = z.object({
+  id: z.string(),
+  workspaceId: z.string(),
+  title: z.string(),
+  col: z.enum(["q", "run", "need", "acc", "done"]),
+  archived: z.boolean(),
+  provider: z.string(),
+  executor: z.string(),
+  created: z.string(),
+  updated: z.string(),
+  owner: z.object({ id: z.string(), title: z.string(), provider: z.string(), archived: z.boolean() }).nullable(),
+  asks: z.boolean(),
+});
+const chatSchema = z.object({ id: z.string(), title: z.string(), provider: z.string(), workspaceId: z.string() });
+
+// Cards are built on the daemon machine: the phone gets a few KB instead of every agent snapshot.
+export const readCards = defineRpc({
+  name: "kanban.cards",
+  input: z.object({ archived: z.boolean() }),
+  output: z.object({ cards: z.array(cardSchema), chats: z.array(chatSchema) }),
+});

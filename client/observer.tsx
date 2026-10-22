@@ -7,15 +7,15 @@ import type {
   PluginButtonRegistration,
   PluginClientContext,
 } from "@getpaseo/plugin/client";
-import type { PaseoAgent } from "@getpaseo/client";
-import { accept, sendBack } from "../shared/contracts";
-import { columnOf, parentOf, STATUS, type Col } from "../shared/model";
-import { allAgents } from "./data";
+import { accept, readCards, sendBack } from "../shared/contracts";
+import { STATUS, type Card, type Col } from "../shared/model";
+import { onAgentEvents } from "./data";
 import { overlayFor } from "./overlay";
 import { palette, T } from "./ui";
 import { isCompactWeb, isWorkspaceRouteOpen, keepExplorerKanban } from "./web";
 
 const CHAT_PANEL = "chat";
+type Chat = { id: string; title: string; provider: string; workspaceId: string };
 const BOARD_PANEL = "board";
 
 function dotIcon(col: Col) {
@@ -104,10 +104,10 @@ function returnForm(client: PluginClientContext, agentId: string, copy: FormText
   };
 }
 
-// One owned agent observation drives composer pills, header buttons and auto-open.
+// Composer pills, header buttons and auto-open from the daemon-built card list
+// (a few KB), refreshed on agent events Paseo already receives.
 export function observe(client: PluginClientContext) {
   const lifetime = new AbortController();
-  const agents = new Map<string, PaseoAgent>();
   const pills = new Map<string, { sig: string; regs: PluginButtonRegistration[] }>();
   const headers = new Map<string, PluginButtonRegistration>();
   const known = new Set<string>();
@@ -139,131 +139,125 @@ export function observe(client: PluginClientContext) {
       ? { kind: "popover", Content: overlayFor(client, workspaceId, chatId) }
       : { kind: "action", onPress: () => client.openPanel(CHAT_PANEL, { workspaceId, location: "explorer" }) };
 
-  const syncPills = (a: PaseoAgent) => {
-    const parentId = parentOf(a);
-    const old = pills.get(a.id);
-    if (!parentId && mobile && !a.archivedAt && a.workspaceId) {
-      if (old?.sig === "chat") return;
-      old?.regs.forEach((r) => r.remove());
-      const workspaceId = a.workspaceId;
-      pills.set(a.id, {
-        sig: "chat",
-        regs: [
-          client.addComposerPill({
-            id: "kanban",
-            workspaceId,
-            agentId: a.id,
-            button: {
-              title: "Канбан чата",
-              icon: "SquareKanban",
-              label: "Канбан",
-              behavior: chatBehavior(workspaceId, a.id),
-            },
-          }),
-        ],
-      });
-      return;
-    }
-    if (!parentId || a.archivedAt || !a.workspaceId) {
-      old?.regs.forEach((r) => r.remove());
-      pills.delete(a.id);
-      return;
-    }
-    const col = columnOf(a, agents.get(parentId));
-    const canAccept = col === "acc";
-    const sig = `${col}|${canAccept}`;
+  const setPills = (id: string, sig: string, make: () => PluginButtonRegistration[]) => {
+    const old = pills.get(id);
     if (old?.sig === sig) return;
     old?.regs.forEach((r) => r.remove());
-    const workspaceId = a.workspaceId;
-    const regs = [
+    pills.set(id, { sig, regs: make() });
+  };
+
+  const chatPill = (chat: Chat) =>
+    setPills(chat.id, "chat", () => [
       client.addComposerPill({
-        id: "status",
-        workspaceId,
-        agentId: a.id,
-        button: {
-          title: "Канбан чата",
-          icon: DOTS[col],
-          label: STATUS[col],
-          behavior: chatBehavior(workspaceId, parentId),
-        },
+        id: "kanban",
+        workspaceId: chat.workspaceId,
+        agentId: chat.id,
+        button: { title: "Канбан чата", icon: "SquareKanban", label: "Канбан", behavior: chatBehavior(chat.workspaceId, chat.id) },
       }),
-    ];
-    if (canAccept)
-      regs.push(
+    ]);
+
+  const cardPills = (card: Card) => {
+    const parentId = card.owner?.id;
+    if (!parentId) return;
+    const canAccept = card.col === "acc";
+    setPills(card.id, `${card.col}|${canAccept}`, () => {
+      const regs = [
         client.addComposerPill({
-          id: "accept",
-          workspaceId,
-          agentId: a.id,
-          button: {
-            title: "Принять работу",
-            icon: "Check",
-            label: "Принять",
-            behavior: { kind: "action", onPress: async () => void (await client.rpc(accept, { agentId: a.id })) },
-          },
+          id: "status",
+          workspaceId: card.workspaceId,
+          agentId: card.id,
+          button: { title: "Канбан чата", icon: DOTS[card.col], label: STATUS[card.col], behavior: chatBehavior(card.workspaceId, parentId) },
         }),
-        client.addComposerPill({
-          id: "return",
-          workspaceId,
-          agentId: a.id,
-          button: {
-            title: "Вернуть в работу с замечаниями",
-            icon: "Undo2",
-            label: "Вернуть",
-            behavior: { kind: "popover", Content: returnForm(client, a.id) },
-          },
-        }),
-      );
-    pills.set(a.id, { sig, regs });
+      ];
+      if (canAccept)
+        regs.push(
+          client.addComposerPill({
+            id: "accept",
+            workspaceId: card.workspaceId,
+            agentId: card.id,
+            button: {
+              title: "Принять работу",
+              icon: "Check",
+              label: "Принять",
+              behavior: { kind: "action", onPress: async () => void (await client.rpc(accept, { agentId: card.id })) },
+            },
+          }),
+          client.addComposerPill({
+            id: "return",
+            workspaceId: card.workspaceId,
+            agentId: card.id,
+            button: {
+              title: "Вернуть в работу с замечаниями",
+              icon: "Undo2",
+              label: "Вернуть",
+              behavior: { kind: "popover", Content: returnForm(client, card.id) },
+            },
+          }),
+        );
+      return regs;
+    });
   };
 
   // The chat kanban opens by itself when a chat starts its first executor while on screen.
-  const autoOpen = (a: PaseoAgent) => {
-    const parentId = parentOf(a);
-    if (mobile || !primed || known.has(a.id) || !parentId || a.archivedAt || !a.workspaceId) return;
-    if (Date.now() - new Date(a.createdAt).getTime() > 120_000 || opened.has(parentId)) return;
-    if (!isWorkspaceRouteOpen(a.workspaceId)) return;
+  const autoOpen = (card: Card) => {
+    const parentId = card.owner?.id;
+    if (mobile || !primed || known.has(card.id) || !parentId || card.archived) return;
+    if (Date.now() - new Date(card.created).getTime() > 120_000 || opened.has(parentId)) return;
+    if (!isWorkspaceRouteOpen(card.workspaceId)) return;
     opened.add(parentId);
-    client.openPanel(CHAT_PANEL, { workspaceId: a.workspaceId, location: "explorer" });
+    client.openPanel(CHAT_PANEL, { workspaceId: card.workspaceId, location: "explorer" });
   };
 
-  const upsert = (a: PaseoAgent) => {
-    autoOpen(a);
-    known.add(a.id);
-    agents.set(a.id, a);
-    if (a.workspaceId && !a.archivedAt) header(a.workspaceId);
-    syncPills(a);
-    // A parent turn changes its executors' column (checking vs awaiting acceptance).
-    for (const child of agents.values()) if (parentOf(child) === a.id) syncPills(child);
+  let loading = false;
+  let again = false;
+  const refresh = async () => {
+    if (loading) return void (again = true);
+    loading = true;
+    try {
+      const { cards, chats } = await client.rpc(readCards, { archived: false });
+      if (lifetime.signal.aborted) return;
+      const live = new Set<string>();
+      for (const card of cards) {
+        autoOpen(card);
+        known.add(card.id);
+        if (card.archived) continue;
+        live.add(card.id);
+        header(card.workspaceId);
+        cardPills(card);
+      }
+      for (const chat of chats) {
+        header(chat.workspaceId);
+        if (!mobile) continue;
+        live.add(chat.id);
+        chatPill(chat);
+      }
+      for (const [id, entry] of pills)
+        if (!live.has(id)) {
+          entry.regs.forEach((r) => r.remove());
+          pills.delete(id);
+        }
+      primed = true;
+    } catch {
+      if (!lifetime.signal.aborted) console.error("Канбан: не удалось обновить карточки");
+    } finally {
+      loading = false;
+      if (again && !lifetime.signal.aborted) {
+        again = false;
+        void refresh();
+      }
+    }
   };
 
-  const reload = async () => {
-    // Pills need live agents only: archived ones would add hundreds of snapshots (824 KB on 22.10.2026).
-    const list = await allAgents(client.paseo, false);
-    if (lifetime.signal.aborted) return;
-    for (const a of list) upsert(a);
-    primed = true;
-  };
-
-  void reload().catch(() => {});
+  void refresh();
+  // The plugin's single agent subscription (live agents, first page only): its events reach
+  // every Kanban listener through paseo.agents.subscribe, panels do not open their own.
   void client.paseo.agents
     .list({ filter: { includeArchived: false }, page: { limit: 1 }, subscribe: {}, signal: lifetime.signal })
-    .then(({ subscription }) => {
-      subscription.subscribe({
-        snapshot: () => void reload().catch(() => {}),
-        update: (message) => {
-          if (message.type !== "agent_update") return;
-          const update = message.payload;
-          if (update.kind === "upsert") return upsert(update.agent);
-          agents.delete(update.agentId);
-          pills.get(update.agentId)?.regs.forEach((r) => r.remove());
-          pills.delete(update.agentId);
-        },
-      });
-      return undefined;
-    })
     .catch(() => {
-      if (!lifetime.signal.aborted) console.error("Канбан: наблюдение за агентами не запустилось");
+      if (!lifetime.signal.aborted) console.error("Канбан: подписка на агентов не запустилась");
     });
+  const offEvents = onAgentEvents(client.paseo, () => void refresh());
+  const timer = setInterval(() => void refresh(), 60_000);
   void client.paseo.workspaces
     .list({ page: { limit: 200 } })
     .then((r) => {
@@ -278,6 +272,8 @@ export function observe(client: PluginClientContext) {
 
   return () => {
     stopExplorer();
+    offEvents();
+    clearInterval(timer);
     lifetime.abort();
     for (const { regs } of pills.values()) regs.forEach((r) => r.remove());
     pills.clear();

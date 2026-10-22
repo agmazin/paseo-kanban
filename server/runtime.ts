@@ -6,8 +6,8 @@ import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
-import { accept, lastReply, prefsSchema, readPrefs, savePrefs, sendBack } from "../shared/contracts";
-import { DEFAULT_PREFS, LABEL, MARKS, NEUTRAL, parentOf, type Prefs } from "../shared/model";
+import { accept, lastReply, prefsSchema, readCards, readPrefs, savePrefs, sendBack } from "../shared/contracts";
+import { cardsOf, DEFAULT_PREFS, LABEL, MARKS, NEUTRAL, parentOf, providerOf, type AgentLike, type Prefs } from "../shared/model";
 
 const home = process.env.PASEO_HOME || join(homedir(), ".paseo");
 const directory = join(home, "plugin-data", "paseo-kanban");
@@ -24,6 +24,17 @@ async function subagent(paseo: PaseoApi, agentId: string) {
   const result = await paseo.agents.ref(agentId).refresh();
   if (!result || !parentOf(result.agent)) throw new Error("Это не карточка канбана");
   return result.agent;
+}
+
+async function listAgents(paseo: PaseoApi, includeArchived: boolean) {
+  let cursor: string | undefined;
+  const all: AgentLike[] = [];
+  do {
+    const r = await paseo.agents.list({ filter: { includeArchived }, page: { limit: 200, cursor } });
+    all.push(...r.entries.map((e) => e.agent));
+    cursor = r.pageInfo.nextCursor ?? undefined;
+  } while (cursor);
+  return all;
 }
 
 export function register(server: PluginServerContext) {
@@ -73,6 +84,13 @@ export function register(server: PluginServerContext) {
     await paseo.agents.ref(agentId).send(text);
     console.log("Канбан: карточка возвращена в работу");
     return {};
+  });
+  server.handle(readCards, async ({ archived }, { paseo }) => {
+    const agents = await listAgents(paseo, archived);
+    const chats = agents
+      .filter((a) => !parentOf(a) && !a.archivedAt && a.workspaceId)
+      .map((a) => ({ id: a.id, title: a.title?.trim() || "Без названия", provider: providerOf(a.provider), workspaceId: a.workspaceId as string }));
+    return { cards: cardsOf(agents), chats };
   });
   server.handle(lastReply, async ({ agentId }, { paseo }) => {
     const page = await paseo.agents.ref(agentId).timeline.refetch({ direction: "tail", limit: 40 });

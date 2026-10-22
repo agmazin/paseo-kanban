@@ -53,12 +53,17 @@
 
 0.1.14 (22.10.2026): вертикальная доска на телефоне из 0.1.13 отменена по просьбе Александра ("верни нормальный канбан") - колонки снова рядом с прокруткой вбок на всех устройствах.
 
+0.1.15 (22.10.2026): скорость запуска на телефоне. Карточки собирает сервер плагина на Маке (RPC `kanban.cards`):
+на телефон идёт 21 КБ живых карточек вместо 204 КБ снимков агентов (доска с архивом - 26 КБ вместо 824 КБ). Одна
+подписка на агентов на весь плагин (её открывает наблюдатель), панели слушают её события через `paseo.agents.subscribe`:
+подписка на каждую панель заставляла демон слать каждое событие ещё раз.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.14 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.1.15 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

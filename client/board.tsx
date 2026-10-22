@@ -335,13 +335,15 @@ export function ChatView({
   sheet = false,
 }: ViewProps & { fixedAgentId?: string; onOpenCard?: (card: Card) => void; sheet?: boolean }) {
   const p = palette(theme);
-  const { cards, agents, loading } = useCards(host.id);
+  const { cards, chats, loading } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
   const toggle = useToggle(prefs, update);
   const [focused, setFocused] = useState<string | null>(null);
   useEffect(() => (fixedAgentId ? undefined : observeSelectedAgent(setFocused)), [fixedAgentId]);
   const selected = fixedAgentId ?? focused;
-  const self = selected ? agents.find((a) => a.id === selected && a.workspaceId === workspaceId) : undefined;
+  // A selected executor shows its chat; a selected chat shows itself.
+  const selectedCard = selected ? cards.find((c) => c.id === selected && c.workspaceId === workspaceId) : undefined;
+  const selectedChat = selected ? chats.find((c) => c.id === selected && c.workspaceId === workspaceId) : undefined;
   // No agent tab selected yet: the most recently active chat of this workspace that has cards.
   const fallback = useMemo(
     () =>
@@ -350,8 +352,8 @@ export function ChatView({
         .sort((a, b) => b.updated.localeCompare(a.updated))[0]?.owner?.id ?? null,
     [cards, workspaceId],
   );
-  const chatId = (self && (parentOf(self) || self.id)) || fallback;
-  const chat = agents.find((a) => a.id === chatId);
+  const chatId = selectedCard?.owner?.id ?? selectedChat?.id ?? fallback;
+  const chat = chats.find((c) => c.id === chatId) ?? cards.find((c) => c.owner?.id === chatId)?.owner ?? null;
   const mine = chatId ? cards.filter((c) => c.owner?.id === chatId) : [];
   const live = mine.filter((c) => !c.archived);
   const arch = mine.filter((c) => c.archived);
