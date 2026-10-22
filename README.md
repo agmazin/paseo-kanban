@@ -58,12 +58,20 @@
 подписка на агентов на весь плагин (её открывает наблюдатель), панели слушают её события через `paseo.agents.subscribe`:
 подписка на каждую панель заставляла демон слать каждое событие ещё раз.
 
+0.1.16 (22.10.2026, по макету `prototype/v6-status-icons.html`, принят Александром): у карточек "В работе" голубая
+крутилка (на компьютере вращается CSS-анимацией, на телефоне кольцо стоит), у "Нужен ответ" оранжевый "!" вместо тега
+"Вопрос к тебе", сам этап оранжевый, "Ждёт приёмки" сиреневый. В правой панели меню "..." (макет
+`prototype/v7-panel-menu.html`): кнопки приёмки на карточках ("Принять" и "Вернуть" с полем замечаний прямо в карточке),
+показ деталей, показ ответственного (строка исполнителя), своя сортировка панели. "Скрыть архивные" панель больше не
+слушает: в ней всегда все карточки чата, в том числе открытого архивного чата. Показ ответственного и кнопки приёмки есть
+и в меню "Вид" общей доски.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.15 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.1.16 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

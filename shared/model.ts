@@ -147,6 +147,13 @@ export interface Prefs {
   order: "asc" | "desc";
   hideArch: boolean;
   details: boolean;
+  // Accept and return buttons on cards waiting for acceptance.
+  buttons: boolean;
+  // The executor row at the bottom of a card.
+  executor: boolean;
+  // The chat panel sorts on its own: board sorts by chat or executor mean subgroups there.
+  chatSort: "u" | "c" | "t";
+  chatOrder: "asc" | "desc";
   // Subgroups are open by default, archive groups are closed by default.
   toggled: Record<string, boolean>;
 }
@@ -156,6 +163,10 @@ export const DEFAULT_PREFS: Prefs = {
   order: "asc",
   hideArch: false,
   details: false,
+  buttons: false,
+  executor: true,
+  chatSort: "u",
+  chatOrder: "asc",
   toggled: {},
 };
 

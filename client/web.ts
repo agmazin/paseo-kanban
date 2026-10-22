@@ -169,3 +169,16 @@ export function keepExplorerKanban(add: (workspaceId: string) => void) {
 export function isCompactWeb() {
   return Platform.OS === "web" && typeof window !== "undefined" && window.innerWidth < 700;
 }
+
+// Running cards: a CSS rotation on desktop; phones keep the ring still (no per-frame work there).
+const SPIN_ID = "paseo-kanban-spin";
+export function spin(node: unknown) {
+  if (Platform.OS !== "web" || typeof document === "undefined" || !node) return;
+  if (!document.getElementById(SPIN_ID)) {
+    const style = document.createElement("style");
+    style.id = SPIN_ID;
+    style.textContent = "@keyframes paseo-kanban-spin{to{transform:rotate(360deg)}}";
+    document.head.appendChild(style);
+  }
+  (node as { style: { animation: string } }).style.animation = "paseo-kanban-spin 0.9s linear infinite";
+}

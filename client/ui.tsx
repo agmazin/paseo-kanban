@@ -1,8 +1,8 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Image, Pressable, Text, View, type TextStyle } from "react-native";
 import { Icon } from "@getpaseo/plugin/client/react-native";
 import type { PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
-import { providerSvg } from "./web";
+import { providerSvg, spin } from "./web";
 import { providerIcons } from "./icons";
 import { shortDate, STATUS, type Card, type Col } from "../shared/model";
 
@@ -45,13 +45,14 @@ export function palette(theme: Theme) {
     menuHover: blend(c.foreground, menu, 0.05),
     button: c.surface2,
     selected: c.foreground,
-    askBg: dark ? "rgba(247,121,109,0.16)" : "rgba(241,46,47,0.10)",
-    askFg: dark ? "#f4a59c" : "#c2412f",
+    ok: c.accent,
+    okFg: c.accentForeground,
+    danger: c.statusDanger,
     dots: {
       q: blend(c.foregroundMuted, bg, 0.45),
       run: dark ? "#5caaf6" : "#268ae0",
-      need: dark ? "#f7796d" : "#f12e2f",
-      acc: dark ? "#db932e" : "#b37824",
+      need: dark ? "#db932e" : "#b37824",
+      acc: dark ? "#a78bfa" : "#7c5cd6",
       done: dark ? "#35c264" : "#299f51",
     } as Record<Col, string>,
   };
@@ -98,6 +99,44 @@ export function Logo({ provider, size, color }: { provider: string; size: number
 
 export function Dot({ col, p }: { col: Col; p: Palette }) {
   return <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: p.dots[col], flexShrink: 0 }} />;
+}
+
+// Running: a blue ring that turns on desktop. Needs an answer: an orange "!".
+export function Spinner({ p, size = 14 }: { p: Palette; size?: number }) {
+  const ref = useRef<View>(null);
+  useEffect(() => spin(ref.current), []);
+  return (
+    <View
+      ref={ref}
+      testID="kanban-spinner"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        borderWidth: 2,
+        borderColor: `${p.dots.run}38`,
+        borderTopColor: p.dots.run,
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+export function Bang({ p, size = 15 }: { p: Palette; size?: number }) {
+  return (
+    <View
+      testID="kanban-bang"
+      style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: p.dots.need, alignItems: "center", justifyContent: "center", flexShrink: 0 }}
+    >
+      <Text style={{ fontFamily: font, color: p.dark ? "#1a1408" : "#ffffff", fontSize: size * 0.72, lineHeight: size, fontWeight: "800" }}>!</Text>
+    </View>
+  );
+}
+
+export function StatusMark({ col, p }: { col: Col; p: Palette }) {
+  if (col === "run") return <Spinner p={p} />;
+  if (col === "need") return <Bang p={p} />;
+  return <Dot col={col} p={p} />;
 }
 
 export function Chevron({ open, p }: { open: boolean; p: Palette }) {
@@ -154,6 +193,8 @@ export function CardView({
   inChat,
   showStatus,
   details,
+  executor = true,
+  actions,
   onPress,
   p,
 }: {
@@ -161,12 +202,25 @@ export function CardView({
   inChat: boolean;
   showStatus: boolean;
   details?: string | null;
+  executor?: boolean;
+  // Rendered under the card body, outside its press target (buttons, text input).
+  actions?: ReactNode;
   onPress(): void;
   p: Palette;
 }) {
   const [hover, setHover] = useState(false);
   const faded = card.col === "done" || card.archived;
+  const live = !card.archived && (card.col === "run" || card.col === "need");
   return (
+    <View
+      style={{
+        backgroundColor: hover ? p.cardHover : p.card,
+        borderWidth: 1,
+        borderColor: p.cardLine,
+        borderRadius: 9,
+        marginBottom: 6,
+      }}
+    >
     <Pressable
       testID={`kanban-card-${card.id}`}
       accessibilityRole="button"
@@ -174,43 +228,28 @@ export function CardView({
       onPress={onPress}
       onHoverIn={() => setHover(true)}
       onHoverOut={() => setHover(false)}
-      style={{
-        backgroundColor: hover ? p.cardHover : p.card,
-        borderWidth: 1,
-        borderColor: p.cardLine,
-        borderRadius: 9,
-        paddingTop: 8,
-        paddingBottom: 9,
-        paddingHorizontal: 11,
-        marginBottom: 6,
-      }}
+      style={{ paddingTop: 8, paddingBottom: actions ? 0 : 9, paddingHorizontal: 11 }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3, minHeight: 16 }}>
         <T color={p.fg3} size={11.5}>
           {shortDate(card.updated)}
         </T>
         {showStatus ? (
           <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5 }}>
-            <Dot col={card.col} p={p} />
+            {card.archived ? <Dot col={card.col} p={p} /> : <StatusMark col={card.col} p={p} />}
             <T color={p.fg3} size={11.5}>
               {STATUS[card.col]}
             </T>
+          </View>
+        ) : live ? (
+          <View style={{ marginLeft: "auto" }}>
+            <StatusMark col={card.col} p={p} />
           </View>
         ) : null}
       </View>
       <T color={faded ? p.fg3 : p.fg} size={13.5} lines={4}>
         {card.title}
       </T>
-      {card.asks ? (
-        <View
-          testID="kanban-ask-tag"
-          style={{ alignSelf: "flex-start", marginTop: 6, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: p.askBg }}
-        >
-          <T color={p.askFg} size={11.5} weight="500">
-            Вопрос к тебе
-          </T>
-        </View>
-      ) : null}
       {details ? (
         <T color={p.fg2} size={12} lines={4} style={{ marginTop: 5 }}>
           {details}
@@ -224,13 +263,66 @@ export function CardView({
           </T>
         </View>
       ) : null}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 4 }}>
-        <Icon name="CornerDownRight" size={13} color={p.corner} />
-        <Logo provider={card.provider} size={12} color={p.exeLogo} />
-        <T color={p.fg3} size={11.5} style={{ flexShrink: 1 }}>
-          {card.executor}
-        </T>
-      </View>
+      {executor ? (
+        <View testID="kanban-executor" style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 4 }}>
+          <Icon name="CornerDownRight" size={13} color={p.corner} />
+          <Logo provider={card.provider} size={12} color={p.exeLogo} />
+          <T color={p.fg3} size={11.5} style={{ flexShrink: 1 }}>
+            {card.executor}
+          </T>
+        </View>
+      ) : null}
+    </Pressable>
+      {actions ? <View style={{ paddingHorizontal: 11, paddingTop: 9, paddingBottom: 9 }}>{actions}</View> : null}
+    </View>
+  );
+}
+
+export function Button({
+  label,
+  icon,
+  primary,
+  disabled,
+  onPress,
+  p,
+  testID,
+}: {
+  label: string;
+  icon?: string;
+  primary?: boolean;
+  disabled?: boolean;
+  onPress(): void;
+  p: Palette;
+  testID?: string;
+}) {
+  const [hover, setHover] = useState(false);
+  const bg = primary ? p.ok : hover ? p.cardHover : p.button;
+  const fg = primary ? p.okFg : p.fg;
+  return (
+    <Pressable
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      disabled={disabled}
+      onPress={onPress}
+      onHoverIn={() => setHover(true)}
+      onHoverOut={() => setHover(false)}
+      style={{
+        flex: 1,
+        height: 28,
+        borderRadius: 7,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        backgroundColor: bg,
+        opacity: disabled ? 0.55 : primary && hover ? 0.9 : 1,
+      }}
+    >
+      {icon ? <Icon name={icon} size={14} color={fg} /> : null}
+      <T color={fg} size={12.5} weight="500">
+        {label}
+      </T>
     </Pressable>
   );
 }

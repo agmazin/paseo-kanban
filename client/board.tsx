@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, ScrollView, View } from "react-native";
+import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { usePaseo, useRpc, useWorkspace, type PluginAgentPanelProps, type PluginScreenProps, type PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
 import { lastBoardWorkspace, rememberWorkspace } from "./focus";
-import { useQuery } from "@tanstack/react-query";
-import { lastReply } from "../shared/contracts";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { accept, lastReply, sendBack } from "../shared/contracts";
 import {
   CHAT_ORDER,
   GROUPS,
@@ -19,16 +19,19 @@ import {
   type Prefs,
 } from "../shared/model";
 import { useCards, usePrefs } from "./data";
-import { CardView, Dot, GroupHeader, MenuBox, MenuItem, T, ToolButton, palette, type Palette, type Theme } from "./ui";
+import { Button, CardView, Dot, GroupHeader, MenuBox, MenuItem, T, ToolButton, palette, type Palette, type Theme } from "./ui";
 import { fadeStyle, installScrollbarStyle, observeSelectedAgent } from "./web";
 
 type Open = (card: Card) => void;
 
-function DetailedCard(props: {
+function DetailedCard({
+  prefs,
+  ...props
+}: {
   card: Card;
   inChat: boolean;
   showStatus: boolean;
-  details: boolean;
+  prefs: Prefs;
   hostId: string;
   onPress(): void;
   p: Palette;
@@ -37,10 +40,96 @@ function DetailedCard(props: {
   const reply = useQuery({
     queryKey: ["kanban-reply", props.hostId, props.card.id, props.card.updated],
     queryFn: () => read({ agentId: props.card.id }),
-    enabled: props.details,
+    enabled: prefs.details,
     staleTime: 5 * 60_000,
   });
-  return <CardView {...props} details={props.details ? reply.data?.text || null : null} />;
+  const actions = prefs.buttons && props.card.col === "acc" && !props.card.archived;
+  return (
+    <CardView
+      {...props}
+      details={prefs.details ? reply.data?.text || null : null}
+      executor={prefs.executor}
+      actions={actions ? <AcceptActions card={props.card} hostId={props.hostId} p={props.p} /> : null}
+    />
+  );
+}
+
+// "Принять" closes the card at once; "Вернуть" opens a field whose text goes to the executor.
+function AcceptActions({ card, hostId, p }: { card: Card; hostId: string; p: Palette }) {
+  const qc = useQueryClient();
+  const doAccept = useRpc(accept);
+  const doReturn = useRpc(sendBack);
+  const [mode, setMode] = useState<"idle" | "return">("idle");
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const run = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setError("");
+    try {
+      await fn();
+      setMode("idle");
+      setText("");
+      await qc.invalidateQueries({ queryKey: ["kanban-cards", hostId] });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Не получилось");
+    } finally {
+      setBusy(false);
+    }
+  };
+  if (mode === "return")
+    return (
+      <View style={{ gap: 7 }}>
+        <TextInput
+          testID="kanban-return-input"
+          autoFocus
+          multiline
+          value={text}
+          onChangeText={setText}
+          placeholder="Что поправить - уйдёт исполнителю"
+          placeholderTextColor={p.fg3}
+          style={{ minHeight: 60, color: p.fg, fontSize: 13, borderWidth: 1, borderColor: p.menuLine, borderRadius: 8, padding: 8, backgroundColor: p.bg }}
+        />
+        {error ? (
+          <T color={p.danger} size={12} lines={3}>
+            {error}
+          </T>
+        ) : null}
+        <View style={{ flexDirection: "row", gap: 6 }}>
+          <Button label="Отмена" disabled={busy} onPress={() => (setMode("idle"), setError(""))} p={p} />
+          <Button
+            testID="kanban-return-send"
+            label={busy ? "Отправляю" : "Отправить"}
+            icon="Send"
+            primary
+            disabled={busy || !text.trim()}
+            onPress={() => run(() => doReturn({ agentId: card.id, text: text.trim() }))}
+            p={p}
+          />
+        </View>
+      </View>
+    );
+  return (
+    <View style={{ gap: 6 }}>
+      {error ? (
+        <T color={p.danger} size={12} lines={3}>
+          {error}
+        </T>
+      ) : null}
+      <View style={{ flexDirection: "row", gap: 6 }}>
+        <Button
+          testID="kanban-accept"
+          label={busy ? "Принимаю" : "Принять"}
+          icon="Check"
+          primary
+          disabled={busy}
+          onPress={() => run(() => doAccept({ agentId: card.id }))}
+          p={p}
+        />
+        <Button testID="kanban-return" label="Вернуть" icon="Undo2" disabled={busy} onPress={() => setMode("return")} p={p} />
+      </View>
+    </View>
+  );
 }
 
 function useToggle(prefs: Prefs, update: (patch: Partial<Prefs>) => void) {
@@ -68,7 +157,7 @@ function ColumnBody({
       card={c}
       inChat={false}
       showStatus={prefs.group !== "status" && sub !== "status"}
-      details={prefs.details}
+      prefs={prefs}
       hostId={hostId}
       onPress={() => open(c)}
       p={p}
@@ -159,6 +248,8 @@ function Menus({ menu, setMenu, prefs, update, p }: { menu: Menu; setMenu(m: Men
         </T>
         <MenuItem icon="Archive" label="Скрыть архивные" checked={prefs.hideArch} onPress={() => update({ hideArch: !prefs.hideArch })} p={p} />
         <MenuItem icon="AlignLeft" label="Показать детали" checked={prefs.details} onPress={() => update({ details: !prefs.details })} p={p} />
+        <MenuItem icon="UserRound" label="Показывать ответственного" checked={prefs.executor} onPress={() => update({ executor: !prefs.executor })} p={p} />
+        <MenuItem icon="SquareCheck" label="Кнопки приёмки" checked={prefs.buttons} onPress={() => update({ buttons: !prefs.buttons })} p={p} />
       </MenuBox>
     );
   const name = <K extends string>(list: readonly [K, string][], key: K) => list.find(([k]) => k === key)?.[1] ?? "";
@@ -199,6 +290,8 @@ function Menus({ menu, setMenu, prefs, update, p }: { menu: Menu; setMenu(m: Men
 }
 
 type Nav = PluginWorkspacePanelProps["navigation"];
+// In one chat's panel the status groups are fixed and there is one owner, so only these sorts make sense.
+const PANEL_SORTS = SORTS.filter((s): s is [Prefs["chatSort"], string] => s[0] === "u" || s[0] === "c" || s[0] === "t");
 type ViewProps = { workspaceId: string; theme: Theme; host: { id: string }; navigation?: Nav };
 
 export function Board(props: PluginWorkspacePanelProps) {
@@ -338,12 +431,14 @@ export function ChatView({
   const { cards, chats, loading } = useCards(host.id);
   const { prefs, update } = usePrefs(host.id);
   const toggle = useToggle(prefs, update);
+  const [menu, setMenu] = useState<null | "main" | "sort">(null);
   const [focused, setFocused] = useState<string | null>(null);
   useEffect(() => (fixedAgentId ? undefined : observeSelectedAgent(setFocused)), [fixedAgentId]);
   const selected = fixedAgentId ?? focused;
-  // A selected executor shows its chat; a selected chat shows itself.
+  // A selected executor shows its chat; a selected chat shows itself, archived chats included.
   const selectedCard = selected ? cards.find((c) => c.id === selected && c.workspaceId === workspaceId) : undefined;
   const selectedChat = selected ? chats.find((c) => c.id === selected && c.workspaceId === workspaceId) : undefined;
+  const selectedOwner = selected && cards.some((c) => c.owner?.id === selected && c.workspaceId === workspaceId) ? selected : null;
   // No agent tab selected yet: the most recently active chat of this workspace that has cards.
   const fallback = useMemo(
     () =>
@@ -352,52 +447,94 @@ export function ChatView({
         .sort((a, b) => b.updated.localeCompare(a.updated))[0]?.owner?.id ?? null,
     [cards, workspaceId],
   );
-  const chatId = selectedCard?.owner?.id ?? selectedChat?.id ?? fallback;
+  const chatId = selectedCard?.owner?.id ?? selectedChat?.id ?? selectedOwner ?? fallback;
   const chat = chats.find((c) => c.id === chatId) ?? cards.find((c) => c.owner?.id === chatId)?.owner ?? null;
   const mine = chatId ? cards.filter((c) => c.owner?.id === chatId) : [];
   const live = mine.filter((c) => !c.archived);
   const arch = mine.filter((c) => c.archived);
   const open: Open = (c) => (onOpenCard ? onOpenCard(c) : navigation?.openAgent({ agentId: c.id }));
+  const order = { ...prefs, sort: prefs.chatSort, order: prefs.chatOrder };
   const card = (c: Card) => (
-    <DetailedCard key={c.id} card={c} inChat showStatus={false} details={prefs.details} hostId={host.id} onPress={() => open(c)} p={p} />
+    <DetailedCard key={c.id} card={c} inChat showStatus={false} prefs={prefs} hostId={host.id} onPress={() => open(c)} p={p} />
+  );
+  const more = (
+    <ToolButton testID="kanban-chat-menu" icon="Ellipsis" label="Настройки панели" active={!!menu} onPress={() => setMenu(menu ? null : "main")} p={p} />
   );
   return (
-    <ScrollView
-      testID="kanban-chat"
-      style={{ flex: 1 }}
-      contentContainerStyle={sheet ? { paddingBottom: 6 } : { padding: 14 }}
-    >
-      {sheet ? null : (
-        <T color={p.fg3} size={12} style={{ paddingHorizontal: 2, paddingBottom: 4 }}>
-          {chat ? `Чат ${chat.title || "без названия"}` : "Выберите вкладку чата"}
-        </T>
-      )}
-      {CHAT_ORDER.map((col) => {
-        const list = sortCards(
-          live.filter((c) => c.col === col),
-          prefs,
-        );
-        const key = `p|${col}`;
-        const isOpen = !prefs.toggled[key];
-        return (
-          <View key={col}>
-            <GroupHeader label={STATUS[col]} count={list.length} open={isOpen} col={col} dense={sheet} onPress={() => toggle(key)} p={p} />
-            {isOpen ? list.map(card) : null}
-          </View>
-        );
-      })}
-      {!loading && chat && mine.length === 0 ? (
-        <T color={p.fg3} size={12} lines={3} style={{ paddingHorizontal: 2, paddingTop: 8 }}>
-          Карточки появятся, когда агент чата заведёт исполнителя под задачу.
-        </T>
-      ) : null}
-      {arch.length > 0 && !prefs.hideArch ? (
-        <View>
-          <GroupHeader label="Архив" count={arch.length} open={!!prefs.toggled["p|arch"]} archive onPress={() => toggle("p|arch")} p={p} />
-          {prefs.toggled["p|arch"] ? sortCards(arch, prefs).map(card) : null}
+    <View style={{ flex: 1 }}>
+      {sheet ? (
+        <View style={{ position: "absolute", top: -3, right: 0, zIndex: 10 }}>{more}</View>
+      ) : (
+        <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 16, paddingRight: 10, paddingTop: 8 }}>
+          <T color={p.fg3} size={12} style={{ flexShrink: 1 }}>
+            {chat ? `Чат ${chat.title || "без названия"}` : "Выберите вкладку чата"}
+          </T>
+          <View style={{ flex: 1 }} />
+          {more}
         </View>
+      )}
+      <ScrollView testID="kanban-chat" style={{ flex: 1 }} contentContainerStyle={sheet ? { paddingBottom: 6 } : { paddingHorizontal: 14, paddingBottom: 14 }}>
+        {CHAT_ORDER.map((col) => {
+          const list = sortCards(
+            live.filter((c) => c.col === col),
+            order,
+          );
+          const key = `p|${col}`;
+          const isOpen = !prefs.toggled[key];
+          return (
+            <View key={col}>
+              <GroupHeader label={STATUS[col]} count={list.length} open={isOpen} col={col} dense={sheet} onPress={() => toggle(key)} p={p} />
+              {isOpen ? list.map(card) : null}
+            </View>
+          );
+        })}
+        {!loading && chat && mine.length === 0 ? (
+          <T color={p.fg3} size={12} lines={3} style={{ paddingHorizontal: 2, paddingTop: 8 }}>
+            Карточки появятся, когда агент чата заведёт исполнителя под задачу.
+          </T>
+        ) : null}
+        {/* The chat panel always shows every card of the chat; "hide archived" is a board setting. */}
+        {arch.length > 0 ? (
+          <View>
+            <GroupHeader label="Архив" count={arch.length} open={!!prefs.toggled["p|arch"]} archive onPress={() => toggle("p|arch")} p={p} />
+            {prefs.toggled["p|arch"] ? sortCards(arch, order).map(card) : null}
+          </View>
+        ) : null}
+      </ScrollView>
+      {menu ? (
+        <Pressable
+          accessibilityLabel="Закрыть меню"
+          onPress={() => setMenu(null)}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 20 }}
+        />
       ) : null}
-    </ScrollView>
+      {menu === "main" ? (
+        <MenuBox p={p} style={{ top: sheet ? 30 : 40, right: sheet ? 0 : 10, minWidth: 270 }}>
+          <MenuItem icon="SquareCheck" label="Кнопки приёмки" checked={prefs.buttons} onPress={() => update({ buttons: !prefs.buttons })} p={p} />
+          <MenuItem icon="AlignLeft" label="Показать детали" checked={prefs.details} onPress={() => update({ details: !prefs.details })} p={p} />
+          <MenuItem icon="UserRound" label="Показывать ответственного" checked={prefs.executor} onPress={() => update({ executor: !prefs.executor })} p={p} />
+          <View style={{ height: 1, backgroundColor: p.menuLine, marginVertical: 5, marginHorizontal: 4 }} />
+          <MenuItem
+            icon="ArrowDownWideNarrow"
+            label="Сортировка"
+            value={PANEL_SORTS.find(([k]) => k === prefs.chatSort)?.[1]}
+            onPress={() => setMenu("sort")}
+            p={p}
+          />
+        </MenuBox>
+      ) : null}
+      {menu === "sort" ? (
+        <MenuBox p={p} style={{ top: sheet ? 30 : 40, right: sheet ? 0 : 10, minWidth: 270 }}>
+          <MenuItem icon="ChevronLeft" label="Сортировка" onPress={() => setMenu("main")} p={p} />
+          <View style={{ height: 1, backgroundColor: p.menuLine, marginVertical: 5, marginHorizontal: 4 }} />
+          {PANEL_SORTS.map(([k, n]) => (
+            <MenuItem key={k} label={n} selected={prefs.chatSort === k} onPress={() => update({ chatSort: k })} p={p} />
+          ))}
+          <View style={{ height: 1, backgroundColor: p.menuLine, marginVertical: 5, marginHorizontal: 4 }} />
+          <MenuItem label="По возрастанию" selected={prefs.chatOrder === "asc"} onPress={() => update({ chatOrder: "asc" })} p={p} />
+          <MenuItem label="По убыванию" selected={prefs.chatOrder === "desc"} onPress={() => update({ chatOrder: "desc" })} p={p} />
+        </MenuBox>
+      ) : null}
+    </View>
   );
 }
-

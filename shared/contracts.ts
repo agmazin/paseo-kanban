@@ -7,6 +7,10 @@ export const prefsSchema = z.object({
   order: z.enum(["asc", "desc"]),
   hideArch: z.boolean(),
   details: z.boolean(),
+  buttons: z.boolean(),
+  executor: z.boolean(),
+  chatSort: z.enum(["u", "c", "t"]),
+  chatOrder: z.enum(["asc", "desc"]),
   toggled: z.record(z.string(), z.boolean()),
 });
 
