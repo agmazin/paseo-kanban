@@ -159,8 +159,9 @@ export function observe(client: PluginClientContext) {
   const cardPills = (card: Card) => {
     const parentId = card.owner?.id;
     if (!parentId) return;
-    const canAccept = card.col === "acc";
-    setPills(card.id, `${card.col}|${canAccept}`, () => {
+    const canAccept = card.col === "acc" && !card.accepted;
+    const canReturn = canAccept || card.accepted;
+    setPills(card.id, `${card.col}|${canAccept}|${canReturn}`, () => {
       const regs = [
         client.addComposerPill({
           id: "status",
@@ -182,6 +183,9 @@ export function observe(client: PluginClientContext) {
               behavior: { kind: "action", onPress: async () => void (await client.rpc(accept, { agentId: card.id })) },
             },
           }),
+        );
+      if (canReturn)
+        regs.push(
           client.addComposerPill({
             id: "return",
             workspaceId: card.workspaceId,

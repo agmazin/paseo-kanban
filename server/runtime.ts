@@ -7,7 +7,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
 import { accept, lastReply, prefsSchema, readCards, readPrefs, sanitizePrefs, savePrefs, sendBack } from "../shared/contracts";
-import { cardsOf, DEFAULT_PREFS, LABEL, MARKS, NEUTRAL, parentOf, providerOf, type AgentLike, type Prefs } from "../shared/model";
+import { ACCEPTED, cardsOf, clearedOnTurn, DEFAULT_PREFS, LABEL, NEUTRAL, parentOf, providerOf, type AgentLike, type Prefs } from "../shared/model";
 
 const home = process.env.PASEO_HOME || join(homedir(), ".paseo");
 const directory = join(home, "plugin-data", "paseo-kanban");
@@ -35,6 +35,28 @@ async function listAgents(paseo: PaseoApi, includeArchived: boolean) {
     cursor = r.pageInfo.nextCursor ?? undefined;
   } while (cursor);
   return all;
+}
+
+export function acceptedNote(agentId: string, title?: string | null) {
+  const name = title?.trim() || "Без названия";
+  return (
+    `Александр принял карточку "${name}" (${agentId}). Реши, что из этого следует (выкатка, внедрение, следующая карточка, ` +
+    `обновление доков), сделай и проверь. Когда всё доделано или делать нечего - поставь карточке метку done: ` +
+    `paseo agent update ${agentId} --label ${LABEL}=done`
+  );
+}
+
+// "Принять" is not the end: the owner chat does what follows (rollout, docs, next card) and sets done itself.
+// Without a live owner chat the note goes to the executor.
+export async function acceptCard(paseo: PaseoApi, agentId: string, mark = setMark) {
+  const agent = await subagent(paseo, agentId);
+  if (agent.status === "running") throw new Error("Исполнитель ещё работает");
+  await mark(agentId, ACCEPTED);
+  const parentId = parentOf(agent);
+  const parent = parentId ? (await paseo.agents.ref(parentId).refresh().catch(() => null))?.agent : null;
+  const to = parent && !parent.archivedAt ? parent.id : agentId;
+  await paseo.agents.ref(to).send(acceptedNote(agentId, agent.title));
+  return to;
 }
 
 export function register(server: PluginServerContext) {
@@ -72,10 +94,8 @@ export function register(server: PluginServerContext) {
     return prefs;
   });
   server.handle(accept, async ({ agentId }, { paseo }) => {
-    const agent = await subagent(paseo, agentId);
-    if (agent.status === "running") throw new Error("Исполнитель ещё работает");
-    await setMark(agentId, "done");
-    console.log("Канбан: карточка принята");
+    await acceptCard(paseo, agentId);
+    console.log("Канбан: карточка принята, доделывает чат");
     return {};
   });
   server.handle(sendBack, async ({ agentId, text }, { paseo }) => {
@@ -107,7 +127,7 @@ export function register(server: PluginServerContext) {
     try {
       const fresh = await paseo.agents.ref(agent.id).refresh();
       const mark = fresh?.agent.labels?.[LABEL];
-      if (mark && (MARKS as readonly string[]).includes(mark)) await setMark(agent.id, NEUTRAL);
+      if (clearedOnTurn(mark)) await setMark(agent.id, NEUTRAL);
     } catch {
       console.error("Канбан: не удалось снять отметку карточки");
     }

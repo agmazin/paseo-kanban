@@ -16,7 +16,15 @@ export const STATUS: Record<Col, string> = Object.fromEntries(COLS) as Record<Co
 // Label an agent or orchestrator sets with `paseo agent update <id> --label kanban=<value>`.
 export const LABEL = "kanban";
 export const MARKS = ["queue", "review", "done", "ask"] as const;
+// "Принять": the result suits Alexander, the owner chat does what follows and then sets done.
+// A new executor turn keeps this mark (the chat may send the executor more work).
+export const ACCEPTED = "accepted";
 export const NEUTRAL = "work";
+
+// A new executor turn returns a marked card to work, except an accepted one: it lives until the chat sets done.
+export function clearedOnTurn(mark?: string | null) {
+  return !!mark && (MARKS as readonly string[]).includes(mark);
+}
 
 export interface AgentLike {
   id: string;
@@ -56,6 +64,8 @@ export interface Card {
   owner: Owner | null;
   // The executor asked Alexander and waits for his answer ("Вопрос к тебе").
   asks: boolean;
+  // Accepted, the owner chat finishes what follows ("Принято, доделываем").
+  accepted: boolean;
 }
 
 export function parentOf(a: AgentLike) {
@@ -85,11 +95,12 @@ export function waitsForAnswer(a: AgentLike) {
 // Runtime state wins over labels: a running executor is in work even if it was accepted before.
 export function columnOf(a: AgentLike, parent?: AgentLike | null): Col {
   const mark = a.labels?.[LABEL];
-  if (a.archivedAt) return mark === "queue" ? "q" : mark === "review" ? "acc" : "done";
+  if (a.archivedAt) return mark === "queue" ? "q" : mark === "review" ? "acc" : mark === ACCEPTED ? "run" : "done";
   if (waitsForAnswer(a)) return "need";
   if (a.status === "running" || a.status === "initializing") return "run";
   if (a.status === "error" || a.attentionReason === "error" || mark === "ask") return "need";
   if (mark === "done") return "done";
+  if (mark === ACCEPTED) return "run";
   if (mark === "queue") return "q";
   if (mark === "review") return "acc";
   // Finished executor: the parent chat checks it while its own turn is running.
@@ -115,6 +126,7 @@ export function cardsOf(agents: readonly AgentLike[]): Card[] {
       created: a.createdAt,
       updated: a.lastActivityAt || a.updatedAt || a.createdAt,
       asks: !a.archivedAt && a.labels?.[LABEL] === "ask" && a.status !== "running",
+      accepted: a.labels?.[LABEL] === ACCEPTED,
       owner: parent
         ? {
             id: parent.id,

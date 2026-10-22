@@ -71,12 +71,18 @@
 создания, поэтому не прыгают. Сохранённый раньше выбор "Название" сам становится "Этапом Канбана", остальные настройки
 сохраняются (`sanitizePrefs`).
 
+0.2.0 (22.10.2026): "Принять" больше не закрывает карточку. Метка `kanban=accepted`: карточка в "В работе" с тегом
+"Принято, доделываем" (кнопки "Принять" нет, "Вернуть" есть), чату-владельцу (без живого чата - исполнителю) уходит
+сообщение "Александр принял карточку ..." - доделать, что из приёмки следует, проверить и поставить `kanban=done`.
+В "Готово" карточку переводит только `done`. Новый ход исполнителя `accepted` не снимает, снимает "Вернуть".
+Причина: принятый макет ушёл в "Готово", а виджет никто не выкатил. Сценарий проверки - `tests/browser/flow16.mjs`.
+
 ## Установка и обновление
 
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.1.17 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.2.0 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

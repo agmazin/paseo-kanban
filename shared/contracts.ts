@@ -65,6 +65,7 @@ const cardSchema = z.object({
   updated: z.string(),
   owner: z.object({ id: z.string(), title: z.string(), provider: z.string(), archived: z.boolean() }).nullable(),
   asks: z.boolean(),
+  accepted: z.boolean(),
 });
 const chatSchema = z.object({ id: z.string(), title: z.string(), provider: z.string(), workspaceId: z.string() });
 

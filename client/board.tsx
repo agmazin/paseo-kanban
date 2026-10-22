@@ -44,7 +44,7 @@ function DetailedCard({
     enabled: prefs.details,
     staleTime: 5 * 60_000,
   });
-  const actions = prefs.buttons && props.card.col === "acc" && !props.card.archived;
+  const actions = prefs.buttons && (props.card.col === "acc" || props.card.accepted) && !props.card.archived;
   return (
     <CardView
       {...props}
@@ -55,7 +55,8 @@ function DetailedCard({
   );
 }
 
-// "Принять" closes the card at once; "Вернуть" opens a field whose text goes to the executor.
+// "Принять" hands the card back to its chat to finish what follows (the chat sets done);
+// "Вернуть" opens a field whose text goes to the executor. An accepted card keeps only "Вернуть".
 function AcceptActions({ card, hostId, p }: { card: Card; hostId: string; p: Palette }) {
   const qc = useQueryClient();
   const doAccept = useRpc(accept);
@@ -118,15 +119,17 @@ function AcceptActions({ card, hostId, p }: { card: Card; hostId: string; p: Pal
         </T>
       ) : null}
       <View style={{ flexDirection: "row", gap: 6 }}>
-        <Button
-          testID="kanban-accept"
-          label={busy ? "Принимаю" : "Принять"}
-          icon="Check"
-          primary
-          disabled={busy}
-          onPress={() => run(() => doAccept({ agentId: card.id }))}
-          p={p}
-        />
+        {card.accepted ? null : (
+          <Button
+            testID="kanban-accept"
+            label={busy ? "Принимаю" : "Принять"}
+            icon="Check"
+            primary
+            disabled={busy}
+            onPress={() => run(() => doAccept({ agentId: card.id }))}
+            p={p}
+          />
+        )}
         <Button testID="kanban-return" label="Вернуть" icon="Undo2" disabled={busy} onPress={() => setMode("return")} p={p} />
       </View>
     </View>

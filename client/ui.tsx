@@ -48,6 +48,9 @@ export function palette(theme: Theme) {
     ok: c.accent,
     okFg: c.accentForeground,
     danger: c.statusDanger,
+    // "Принято, доделываем": a calm accent tint from the theme.
+    acceptedBg: blend(c.accent, c.surface1, dark ? 0.16 : 0.12),
+    acceptedFg: blend(c.accent, c.foreground, dark ? 0.55 : 0.75),
     dots: {
       q: blend(c.foregroundMuted, bg, 0.45),
       run: dark ? "#5caaf6" : "#268ae0",
@@ -250,6 +253,16 @@ export function CardView({
       <T color={faded ? p.fg3 : p.fg} size={13.5} lines={4}>
         {card.title}
       </T>
+      {card.accepted && !card.archived ? (
+        <View
+          testID="kanban-accepted-tag"
+          style={{ alignSelf: "flex-start", marginTop: 6, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: p.acceptedBg }}
+        >
+          <T color={p.acceptedFg} size={11.5} weight="500">
+            Принято, доделываем
+          </T>
+        </View>
+      ) : null}
       {details ? (
         <T color={p.fg2} size={12} lines={4} style={{ marginTop: 5 }}>
           {details}
