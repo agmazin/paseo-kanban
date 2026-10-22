@@ -105,7 +105,6 @@ const byCreated = (a: AgentLike, b: AgentLike) => a.createdAt.localeCompare(b.cr
 export function planKeys(agents: readonly AgentLike[], workspaces: readonly WorkspaceLike[], prev: KeysState) {
   const state: KeysState = { prefixes: { ...prev.prefixes }, last: { ...prev.last }, assigned: { ...prev.assigned } };
   const keyOf = new Map<string, string>();
-  const fresh = new Set<string>();
   for (const a of agents) {
     const k = a.labels?.[KEY_LABEL] || state.assigned[a.id];
     if (!parseKey(k)) continue;
@@ -144,7 +143,6 @@ export function planKeys(agents: readonly AgentLike[], workspaces: readonly Work
   for (const a of chats) {
     const k = next(prefixOf(a.workspaceId!));
     keyOf.set(a.id, k);
-    fresh.add(a.id);
   }
   const children = new Map<string, AgentLike[]>();
   for (const a of agents) {
@@ -157,7 +155,6 @@ export function planKeys(agents: readonly AgentLike[], workspaces: readonly Work
     for (const c of (children.get(id) ?? []).sort(byCreated)) {
       if (!keyOf.has(c.id)) {
         keyOf.set(c.id, next(keyOf.get(id)!));
-        fresh.add(c.id);
       }
       queue.push(c.id);
     }
@@ -171,18 +168,17 @@ export function planKeys(agents: readonly AgentLike[], workspaces: readonly Work
     state.assigned[a.id] = key;
     const labels: Record<string, string> = {};
     if (a.labels?.[KEY_LABEL] !== key) labels[KEY_LABEL] = key;
-    let title = (a.title ?? "").trim();
+    const title = (a.title ?? "").trim();
     let multica = a.labels?.[MULTICA_LABEL] || null;
-    if (fresh.has(a.id) && title) {
-      const old = multicaKey(title, known);
-      if (old) {
-        multica = old.key;
-        labels[MULTICA_LABEL] = old.key;
-        title = old.rest;
-      }
-    }
     // A chat without a title yet gets its key now and the prefix when Paseo names it.
-    const name = title ? bareTitle(title, key, multica, known) : "";
+    let name = title ? bareTitle(title, key, multica, known) : "";
+    // An old Multica key goes to its label once; also after a failed first write, when the key came from the state.
+    const old = !multica && name ? multicaKey(name, known) : null;
+    if (old && old.key !== key) {
+      multica = old.key;
+      labels[MULTICA_LABEL] = old.key;
+      name = bareTitle(old.rest, key, multica, known);
+    }
     const wanted = name ? `${key}: ${name}` : undefined;
     const change: KeyChange = { id: a.id, key, oldTitle: a.title ?? null, labels };
     if (wanted && wanted !== a.title) change.title = wanted;

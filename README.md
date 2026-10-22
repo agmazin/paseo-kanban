@@ -81,6 +81,8 @@
 из PATH. Нужно порталу ЭкоЭксперта (Paseo в Linux-контейнере): там Homebrew нет, и новый ход не снимал метку с карточки.
 На Маке Александра поведение прежнее.
 
+0.3.1 (22.10.2026): ключ Multica снимается и тогда, когда первая запись номера не прошла (номер взят из `state.json`); так же чинится двойной префикс "ECO-5-8: ECO-42: ..." из 0.3.0. Ошибка записи номера пишется в лог демона.
+
 0.3.0 (22.10.2026): номера чатов и карточек, чтобы во вкладках сразу было видно, где чат, а где подагент: "AGM-1: Paseo
 Канбан" - чат, "AGM-1-1: Кнопки приёмки" - его карточка, "AGM-1-1-1" - подагент карточки. Префикс - пространство
 (agmazin AGM, ЭкоЭксперт ECO, CTG CTG, otchetico OTC; новое - три латинские буквы из имени транслитом, уникально;
@@ -102,7 +104,7 @@
 Как у Диалогов: основной Paseo грузит плагин из клона по тегу, а не из этого каталога.
 
 ```sh
-git clone --branch v0.3.0 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
+git clone --branch v0.3.1 /Users/agmazin/Yandex.Disk.localized/public/projects/local/paseo-kanban /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ln -s /Users/agmazin/Library/Developer/paseo-kanban/node_modules /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban/node_modules
 paseo plugin install /Users/agmazin/Library/Developer/paseo-releases/paseo-kanban
 ```

@@ -24,8 +24,9 @@ export function keysReconciler(deps: KeysDeps) {
     for (const change of changes) {
       try {
         await deps.write(change);
-      } catch {
+      } catch (e) {
         failed++;
+        deps.log?.(`Канбан: номер ${change.key} не записан - ${(e as Error).message.slice(0, 300)}`);
       }
     }
     if (changes.length) deps.log?.(`Канбан: номера - изменений ${changes.length}, ошибок ${failed}`);

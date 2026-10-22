@@ -104,6 +104,19 @@ test("old Multica keys move to multica.key, no double prefix", () => {
   assert.equal(planKeys(applied, ws, state).changes[0].title, "AGM-1-1: Бэкап");
 });
 
+test("a failed first write: the Multica key still goes to its label, a double prefix is repaired", () => {
+  const agents = [chat("c1", "Телефония"), card("k", "c1", "ECO-42: Архив звонков")];
+  const first = planKeys(agents, ws, EMPTY_KEYS);
+  // The write of k failed: no labels, the old title; its key is in the state.
+  const second = planKeys(apply(agents, first.changes.filter((c) => c.id !== "k")), ws, first.state);
+  assert.deepEqual(second.changes.map((c) => [c.title, c.labels]), [["AGM-1-1: Архив звонков", { "kanban.key": "AGM-1-1", "multica.key": "ECO-42" }]]);
+  // Already written with a double prefix (0.3.0 before the fix).
+  const doubled = [chat("c1", "AGM-1: Телефония", { labels: { "kanban.key": "AGM-1" } }), card("k", "c1", "AGM-1-1: ECO-42: Архив звонков", { labels: { "kanban.key": "AGM-1-1" } })];
+  assert.deepEqual(planKeys(doubled, ws, EMPTY_KEYS).changes.map((c) => [c.title, c.labels]), [["AGM-1-1: Архив звонков", { "multica.key": "ECO-42" }]]);
+  // A chat named like its own key is not a Multica key.
+  assert.deepEqual(planKeys([chat("c2", "AGM-1: Чат", { labels: { "kanban.key": "AGM-1" } })], ws, EMPTY_KEYS).changes, []);
+});
+
 test("the prefix comes back after a rename, without loops", () => {
   const agents = [chat("c1", null), card("k", "c1", "Задача")];
   const first = planKeys(agents, ws, EMPTY_KEYS);
