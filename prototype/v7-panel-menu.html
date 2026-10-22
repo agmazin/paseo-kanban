@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Канбан чата: меню "..." и кнопки приёмки на карточке</title>
+<style>
+  :root {
+    --page: #0f1211; --panel: #131716; --card: #1e2120; --cardLine: #282a29; --menu: #272a29; --menuLine: #313433;
+    --fg: #fafafa; --fg2: #a1a5a4; --fg3: #6d7170; --group: #d8d9d8;
+    --q: #575958; --run: #5caaf6; --need: #db932e; --acc: #a78bfa; --done: #35c264;
+    --ok: #2f7a4f; --okHover: #358957;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; color: var(--fg); }
+  .wrap { display: flex; gap: 28px; padding: 26px 28px 30px; align-items: flex-start; }
+  .col { width: 360px; }
+  .cap { font-size: 13px; font-weight: 600; color: var(--fg2); margin: 0 0 10px 4px; }
+  .panel { position: relative; background: var(--panel); border: 1px solid #1d2221; border-radius: 12px; padding: 8px 12px 10px; }
+  .head { display: flex; align-items: center; margin: 0 0 2px 2px; }
+  .sub { font-size: 12.5px; color: var(--fg3); }
+  .more { margin-left: auto; width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--fg2); }
+  .more.on { background: var(--menu); color: var(--fg); }
+  .gh { display: flex; align-items: center; gap: 6px; padding: 7px 2px 6px; font-size: 12.5px; }
+  .chev { width: 15px; height: 15px; color: var(--fg3); }
+  .dot { width: 8px; height: 8px; border-radius: 4px; flex-shrink: 0; }
+  .gh .label { color: var(--group); font-weight: 600; }
+  .gh .count { color: var(--fg3); }
+  .card { background: var(--card); border: 1px solid var(--cardLine); border-radius: 9px; padding: 8px 11px 9px; margin-bottom: 6px; }
+  .top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; min-height: 16px; }
+  .date { font-size: 11.5px; color: var(--fg3); }
+  .mark { margin-left: auto; display: flex; align-items: center; }
+  .title { font-size: 13.5px; line-height: 18px; }
+  .details { font-size: 12px; line-height: 16px; color: var(--fg2); margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .exec { display: flex; align-items: center; gap: 5px; margin-top: 4px; font-size: 11.5px; color: var(--fg3); }
+  .btns { display: flex; gap: 6px; margin-top: 9px; }
+  .btn { flex: 1; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12.5px; font-weight: 500; }
+  .btn.ok { background: var(--ok); color: #fff; }
+  .btn.back { background: var(--menu); color: var(--fg); }
+  .spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(92,170,246,0.22); border-top-color: var(--run); animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .bang { width: 15px; height: 15px; border-radius: 50%; background: var(--need); color: #1a1408; font-size: 11px; font-weight: 800; line-height: 15px; text-align: center; }
+  .menuBox { position: absolute; top: 40px; right: 10px; width: 292px; z-index: 5; background: var(--menu); border: 1px solid var(--menuLine); border-radius: 12px; padding: 6px; box-shadow: 0 16px 40px rgba(0,0,0,.55); }
+  .mi { display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 10px; border-radius: 8px; font-size: 14px; }
+  .mi.hl { background: #2f3231; }
+  .mi .ic { width: 17px; height: 17px; color: var(--fg2); flex-shrink: 0; }
+  .mi .val { margin-left: auto; color: var(--fg2); font-size: 13px; display: flex; align-items: center; gap: 4px; }
+  .mi .chk { margin-left: auto; width: 16px; height: 16px; color: var(--fg); }
+  .sep { height: 1px; background: var(--menuLine); margin: 5px 4px; }
+  .mlabel { font-size: 12px; color: var(--fg3); padding: 6px 10px 4px; }
+  .note { width: 360px; font-size: 12.5px; line-height: 18px; color: var(--fg2); margin-top: 12px; padding-left: 4px; }
+  .note b { color: var(--group); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap" id="shot"></div>
+<script>
+const svg = (d, cls = "ic", extra = "") => `<svg class="${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra}>${d}</svg>`;
+const chev = svg('<path d="m9 18 6-6-6-6"/>', "chev", 'style="transform:rotate(90deg)"');
+const dots = svg('<circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/>', "", 'width="18" height="18" stroke-width="2.4"');
+const corner = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a4e4d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 10 5 5-5 5"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>';
+const claude = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#5b5f5e"><path d="M12 1.5l1.6 7.1 6.3-3.7-3.7 6.3 7.1 1.6-7.1 1.6 3.7 6.3-6.3-3.7L12 24l-1.6-7.1-6.3 3.7 3.7-6.3L.7 12.8l7.1-1.6L4.1 4.9l6.3 3.7z"/></svg>';
+const openai = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5b5f5e" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M5 8l14 8M5 16l14-8"/></svg>';
+const check = svg('<path d="M20 6 9 17l-5-5"/>', "chk");
+const icons = {
+  buttons: '<rect x="3" y="7" width="8" height="10" rx="2"/><rect x="13" y="7" width="8" height="10" rx="2"/>',
+  details: '<path d="M4 6h16M4 12h16M4 18h10"/>',
+  arch: '<rect x="3" y="4" width="18" height="5" rx="1"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/>',
+  sort: '<path d="m3 16 4 4 4-4M7 20V4M21 8l-4-4-4 4M17 4v16"/>',
+  board: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/>',
+};
+const cards = {
+  acc: [
+    { date: "сейчас", title: "Макет: крутилка, оранжевый ! и сиреневая приёмка", details: "Нужен твой взгляд на макет правой панели Канбана (до кода).", exec: "Sonnet 5.5", prov: claude },
+    { date: "10:28", title: "Приёмка на компьютере: Канбан и Диалоги", details: "Нужна твоя приёмка на компьютере: за вчера и сегодня обновились Канбан (0.1.15) и Диалоги (0.6.4).", exec: "Opus 5.5", prov: claude },
+  ],
+  need: [{ date: "13:41", title: "Итоги дебиторки: какие этапы считать просроченными?", details: "Нужен твой выбор: все этапы после \"Счёт выставлен\" или только \"Ждём оплату\".", exec: "Opus 5.5", prov: claude }],
+  run: [{ date: "13:52", title: "Перевести тревоги бэкапов на Канбан", details: "Переписываю маршрут тревог: Multica убрана, карточка заводится в чате \"Бэкапы\".", exec: "GPT-6.1-Sol", prov: openai }],
+};
+const groups = [["acc", "Ждёт приёмки"], ["need", "Нужен ответ"], ["run", "В работе"], ["q", "Очередь"], ["done", "Готово"]];
+function card(c, col, buttons) {
+  const mark = col === "run" ? '<div class="spin"></div>' : col === "need" ? '<div class="bang">!</div>' : "";
+  const btns = buttons && col === "acc"
+    ? `<div class="btns"><div class="btn ok">${svg('<path d="M20 6 9 17l-5-5"/>', "", 'width="14" height="14"')}Принять</div><div class="btn back">${svg('<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>', "", 'width="14" height="14"')}Вернуть</div></div>`
+    : "";
+  return `<div class="card"><div class="top"><span class="date">${c.date}</span><span class="mark">${mark}</span></div>
+    <div class="title">${c.title}</div><div class="details">${c.details}</div>
+    <div class="exec">${corner}${c.prov}<span>${c.exec}</span></div>${btns}</div>`;
+}
+function menu() {
+  const item = (icon, label, tail = "", hl = false) => `<div class="mi${hl ? " hl" : ""}">${svg(icons[icon])}<span>${label}</span>${tail}</div>`;
+  return `<div class="menuBox">
+    ${item("buttons", "Кнопки приёмки", check, true)}
+    ${item("details", "Показать детали", check)}
+    ${item("arch", "Скрыть архивные")}
+    <div class="sep"></div>
+    ${item("sort", "Сортировка", '<span class="val">По обновлению ›</span>')}
+    <div class="sep"></div>
+    ${item("board", "Открыть общий Канбан")}
+  </div>`;
+}
+function panel(buttons, open) {
+  let h = `<div class="panel"><div class="head"><span class="sub">Чат Paseo Канбан</span><span class="more${open ? " on" : ""}">${dots}</span></div>`;
+  if (open) h += menu();
+  for (const [col, label] of groups) {
+    const list = cards[col] ?? [];
+    h += `<div class="gh">${chev}<span class="dot" style="background:var(--${col})"></span><span class="label">${label}</span><span class="count">${list.length}</span></div>`;
+    for (const c of list) h += card(c, col, buttons);
+  }
+  return h + "</div>";
+}
+document.getElementById("shot").innerHTML =
+  `<div class="col"><div class="cap">Меню "..." открыто</div>${panel(false, true)}</div>` +
+  `<div class="col"><div class="cap">Кнопки приёмки включены</div>${panel(true, false)}
+   <div class="note"><b>"Принять"</b> закрывает карточку сразу. <b>"Вернуть"</b> раскрывает поле для замечаний прямо в карточке, они уходят исполнителю.
+   Пункт меню запоминается, как остальные настройки вида.</div></div>`;
+</script>
+</body>
+</html>
