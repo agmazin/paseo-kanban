@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
-import { accept, lastReply, prefsSchema, readCards, readPrefs, savePrefs, sendBack } from "../shared/contracts";
+import { accept, lastReply, prefsSchema, readCards, readPrefs, sanitizePrefs, savePrefs, sendBack } from "../shared/contracts";
 import { cardsOf, DEFAULT_PREFS, LABEL, MARKS, NEUTRAL, parentOf, providerOf, type AgentLike, type Prefs } from "../shared/model";
 
 const home = process.env.PASEO_HOME || join(homedir(), ".paseo");
@@ -43,7 +43,7 @@ export function register(server: PluginServerContext) {
   const ready = (async () => {
     try {
       const saved = JSON.parse(await readFile(path, "utf8"));
-      prefs = prefsSchema.parse({ ...DEFAULT_PREFS, ...saved.prefs });
+      prefs = sanitizePrefs(saved.prefs, DEFAULT_PREFS);
     } catch (e) {
       if ((e as { code?: string }).code !== "ENOENT") console.error("Канбан: не удалось прочитать настройки вида");
     }

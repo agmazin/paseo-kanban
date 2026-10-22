@@ -61,3 +61,17 @@ test("subgroups by sort field, not by the grouping field", () => {
   const cards = cardsOf([chat, sub("a"), sub("b", { status: "running" })]);
   assert.deepEqual(subgroups(cards, "status", DEFAULT_PREFS).map((g) => g.value), ["run", "acc"]);
 });
+
+test("panel stage sort: pipeline groups, still cards; old saved sorts fall back to it", async () => {
+  const { panelOrder } = await import("../shared/model.ts");
+  const { sanitizePrefs } = await import("../shared/contracts.ts");
+  const prefs = sanitizePrefs({ chatSort: "t", buttons: true, executor: false, toggled: { "p|done": true } }, DEFAULT_PREFS);
+  assert.equal(prefs.chatSort, "stage");
+  assert.equal(prefs.buttons, true);
+  assert.equal(prefs.executor, false);
+  assert.deepEqual(prefs.toggled, { "p|done": true });
+  assert.deepEqual(panelOrder(prefs).groups, ["q", "run", "need", "acc", "done"]);
+  assert.equal(panelOrder(prefs).sort.sort, "c");
+  assert.deepEqual(panelOrder({ ...prefs, chatOrder: "desc" }).groups, ["done", "acc", "need", "run", "q"]);
+  assert.equal(DEFAULT_PREFS.chatSort, "stage");
+});

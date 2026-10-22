@@ -5,11 +5,12 @@ import { lastBoardWorkspace, rememberWorkspace } from "./focus";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { accept, lastReply, sendBack } from "../shared/contracts";
 import {
-  CHAT_ORDER,
   GROUPS,
+  PANEL_SORTS,
   SORTS,
   STATUS,
   columns,
+  panelOrder,
   parentOf,
   sortCards,
   subgroupField,
@@ -290,8 +291,6 @@ function Menus({ menu, setMenu, prefs, update, p }: { menu: Menu; setMenu(m: Men
 }
 
 type Nav = PluginWorkspacePanelProps["navigation"];
-// In one chat's panel the status groups are fixed and there is one owner, so only these sorts make sense.
-const PANEL_SORTS = SORTS.filter((s): s is [Prefs["chatSort"], string] => s[0] === "u" || s[0] === "c" || s[0] === "t");
 type ViewProps = { workspaceId: string; theme: Theme; host: { id: string }; navigation?: Nav };
 
 export function Board(props: PluginWorkspacePanelProps) {
@@ -453,7 +452,7 @@ export function ChatView({
   const live = mine.filter((c) => !c.archived);
   const arch = mine.filter((c) => c.archived);
   const open: Open = (c) => (onOpenCard ? onOpenCard(c) : navigation?.openAgent({ agentId: c.id }));
-  const order = { ...prefs, sort: prefs.chatSort, order: prefs.chatOrder };
+  const { groups, sort: order } = panelOrder(prefs);
   const card = (c: Card) => (
     <DetailedCard key={c.id} card={c} inChat showStatus={false} prefs={prefs} hostId={host.id} onPress={() => open(c)} p={p} />
   );
@@ -474,7 +473,7 @@ export function ChatView({
         </View>
       )}
       <ScrollView testID="kanban-chat" style={{ flex: 1 }} contentContainerStyle={sheet ? { paddingBottom: 6 } : { paddingHorizontal: 14, paddingBottom: 14 }}>
-        {CHAT_ORDER.map((col) => {
+        {groups.map((col) => {
           const list = sortCards(
             live.filter((c) => c.col === col),
             order,

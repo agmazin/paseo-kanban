@@ -7,6 +7,11 @@ export const COLS: readonly [Col, string][] = [
   ["acc", "Ждёт приёмки"],
   ["done", "Готово"],
 ];
+export const PANEL_SORTS: readonly [Prefs["chatSort"], string][] = [
+  ["stage", "Этап Канбана"],
+  ["u", "Дата изменения"],
+  ["c", "Дата создания"],
+];
 export const STATUS: Record<Col, string> = Object.fromEntries(COLS) as Record<Col, string>;
 // Label an agent or orchestrator sets with `paseo agent update <id> --label kanban=<value>`.
 export const LABEL = "kanban";
@@ -152,7 +157,8 @@ export interface Prefs {
   // The executor row at the bottom of a card.
   executor: boolean;
   // The chat panel sorts on its own: board sorts by chat or executor mean subgroups there.
-  chatSort: "u" | "c" | "t";
+  // "stage" puts the groups in pipeline order and keeps cards still (by creation date).
+  chatSort: "stage" | "u" | "c";
   chatOrder: "asc" | "desc";
   // Subgroups are open by default, archive groups are closed by default.
   toggled: Record<string, boolean>;
@@ -165,7 +171,7 @@ export const DEFAULT_PREFS: Prefs = {
   details: false,
   buttons: false,
   executor: true,
-  chatSort: "u",
+  chatSort: "stage",
   chatOrder: "asc",
   toggled: {},
 };
@@ -191,6 +197,17 @@ export function fieldOf(c: Card, f: GroupKey | SortKey, now = new Date()): strin
 
 export function labelOf(f: GroupKey | SortKey, v: string) {
   return f === "status" ? STATUS[v as Col] ?? v : v;
+}
+
+// The chat panel: pipeline order of groups (Очередь ... Готово) for the stage sort, otherwise
+// what needs Alexander first.
+export function panelOrder(prefs: Prefs) {
+  if (prefs.chatSort !== "stage") return { groups: CHAT_ORDER, sort: { ...prefs, sort: prefs.chatSort, order: prefs.chatOrder } };
+  const pipeline = COLS.map(([c]) => c);
+  return {
+    groups: prefs.chatOrder === "asc" ? pipeline : [...pipeline].reverse(),
+    sort: { ...prefs, sort: "c" as const, order: prefs.chatOrder },
+  };
 }
 
 export function sortCards(list: readonly Card[], prefs: Prefs) {

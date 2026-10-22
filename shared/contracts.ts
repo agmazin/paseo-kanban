@@ -9,10 +9,19 @@ export const prefsSchema = z.object({
   details: z.boolean(),
   buttons: z.boolean(),
   executor: z.boolean(),
-  chatSort: z.enum(["u", "c", "t"]),
+  chatSort: z.enum(["stage", "u", "c"]),
   chatOrder: z.enum(["asc", "desc"]),
   toggled: z.record(z.string(), z.boolean()),
 });
+
+// Saved prefs from an older version keep every valid field; a retired value (the "Название" sort) falls back to its default.
+export function sanitizePrefs(raw: unknown, defaults: z.output<typeof prefsSchema>) {
+  const saved = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const shape = prefsSchema.shape as Record<string, z.ZodTypeAny>;
+  const out: Record<string, unknown> = { ...defaults };
+  for (const key of Object.keys(shape)) if (key in saved && shape[key].safeParse(saved[key]).success) out[key] = saved[key];
+  return prefsSchema.parse(out);
+}
 
 export const readPrefs = defineRpc({
   name: "kanban.prefs",
