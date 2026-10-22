@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Канбан чата: крутилка, оранжевый "!" и сиреневая приёмка</title>
+<style>
+  :root {
+    --page: #0f1211; --panel: #131716; --card: #1e2120; --cardLine: #282a29;
+    --fg: #fafafa; --fg2: #a1a5a4; --fg3: #6d7170; --group: #d8d9d8; --corner: #4a4e4d;
+    --q: #575958; --run: #5caaf6; --need: #db932e; --acc: #a78bfa; --done: #35c264;
+    --ask-bg: rgba(247,121,109,0.16); --ask-fg: #f4a59c; --need-old: #f7796d; --acc-old: #db932e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; color: var(--fg); }
+  .wrap { display: flex; gap: 28px; padding: 26px 28px 30px; align-items: flex-start; }
+  .col { width: 360px; }
+  .cap { font-size: 13px; font-weight: 600; color: var(--fg2); margin: 0 0 10px 4px; letter-spacing: .2px; }
+  .panel { background: var(--panel); border: 1px solid #1d2221; border-radius: 12px; padding: 12px 12px 10px; }
+  .sub { font-size: 12.5px; color: var(--fg3); margin: 0 0 6px 2px; }
+  .gh { display: flex; align-items: center; gap: 6px; padding: 7px 2px 6px; font-size: 12.5px; }
+  .chev { width: 15px; height: 15px; color: var(--fg3); }
+  .dot { width: 8px; height: 8px; border-radius: 4px; flex-shrink: 0; }
+  .gh .label { color: var(--group); font-weight: 600; }
+  .gh .count { color: var(--fg3); }
+  .card { background: var(--card); border: 1px solid var(--cardLine); border-radius: 9px; padding: 8px 11px 9px; margin-bottom: 6px; }
+  .top { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; min-height: 16px; }
+  .date { font-size: 11.5px; color: var(--fg3); }
+  .mark { margin-left: auto; display: flex; align-items: center; }
+  .title { font-size: 13.5px; line-height: 18px; }
+  .details { font-size: 12px; line-height: 16px; color: var(--fg2); margin-top: 5px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .tag { display: inline-block; margin-top: 6px; padding: 2px 7px; border-radius: 6px; background: var(--ask-bg); color: var(--ask-fg); font-size: 11.5px; font-weight: 500; }
+  .exec { display: flex; align-items: center; gap: 5px; margin-top: 4px; font-size: 11.5px; color: var(--fg3); }
+  .exec svg { flex-shrink: 0; }
+  /* Blue spinner: desktop only, the phone gets the same ring without rotation. */
+  .spin { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(92,170,246,0.22); border-top-color: var(--run); animation: spin .9s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .bang { width: 15px; height: 15px; border-radius: 50%; background: var(--need); color: #1a1408; font-size: 11px; font-weight: 800; line-height: 15px; text-align: center; }
+  .note { width: 360px; font-size: 12.5px; line-height: 18px; color: var(--fg2); margin-top: 12px; padding-left: 4px; }
+  .note b { color: var(--group); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap" id="shot"></div>
+<script>
+const chev = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(90deg)"><path d="m9 18 6-6-6-6"/></svg>';
+const corner = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4a4e4d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 10 5 5-5 5"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>';
+const claude = '<svg width="12" height="12" viewBox="0 0 24 24" fill="#5b5f5e"><path d="M12 1.5l1.6 7.1 6.3-3.7-3.7 6.3 7.1 1.6-7.1 1.6 3.7 6.3-6.3-3.7L12 24l-1.6-7.1-6.3 3.7 3.7-6.3L.7 12.8l7.1-1.6L4.1 4.9l6.3 3.7z"/></svg>';
+const openai = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5b5f5e" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M5 8l14 8M5 16l14-8"/></svg>';
+const cards = {
+  need: [{ date: "13:41", title: "Итоги дебиторки: какие этапы считать просроченными?", details: "Нужен твой выбор: все этапы после \"Счёт выставлен\" или только \"Ждём оплату\".", exec: "Opus 5.5", prov: claude, asks: true }],
+  run: [
+    { date: "13:52", title: "Перевести тревоги бэкапов на Канбан", details: "Переписываю маршрут тревог: Multica убрана, карточка заводится в чате \"Бэкапы\".", exec: "GPT-6.1-Sol", prov: openai },
+    { date: "13:47", title: "Свежие плагины Paseo на стенд ЭЭ", details: "Ставлю Канбан 0.1.15 и Диалоги 0.6.4 на стенд, проверяю вход сотрудника.", exec: "Opus 5.5", prov: claude },
+  ],
+  acc: [
+    { date: "12:45", title: "Переезд с Multica: 50 карточек в Канбан", details: "Перенесены 49 карточек, добавлена одна новая - перевод тревог бэкапов на Канбан.", exec: "GPT-6.1-Sol", prov: openai },
+    { date: "10:28", title: "Приёмка на компьютере: Канбан и Диалоги", details: "Нужна твоя приёмка на компьютере: за вчера и сегодня обновились Канбан (0.1.15) и Диалоги (0.6.4).", exec: "Opus 5.5", prov: claude },
+  ],
+};
+const groups = [["need", "Нужен ответ"], ["run", "В работе"], ["acc", "Ждёт приёмки"], ["q", "Очередь"], ["done", "Готово"]];
+function card(c, col, v) {
+  let mark = "";
+  if (v === "new" && col === "run") mark = '<div class="spin"></div>';
+  if (v === "new" && col === "need") mark = '<div class="bang">!</div>';
+  const tag = v === "old" && c.asks ? '<span class="tag">Вопрос к тебе</span>' : "";
+  return `<div class="card"><div class="top"><span class="date">${c.date}</span><span class="mark">${mark}</span></div>
+    <div class="title">${c.title}</div>${tag}<div class="details">${c.details}</div>
+    <div class="exec">${corner}${c.prov}<span>${c.exec}</span></div></div>`;
+}
+function panel(v) {
+  const colors = v === "old" ? { need: "var(--need-old)", acc: "var(--acc-old)" } : {};
+  let h = '<div class="panel"><div class="sub">Чат Paseo Канбан</div>';
+  for (const [col, label] of groups) {
+    const list = cards[col] ?? [];
+    h += `<div class="gh">${chev}<span class="dot" style="background:${colors[col] ?? `var(--${col})`}"></span><span class="label">${label}</span><span class="count">${list.length}</span></div>`;
+    for (const c of list) h += card(c, col, v);
+  }
+  return h + "</div>";
+}
+document.getElementById("shot").innerHTML =
+  `<div class="col"><div class="cap">Сейчас</div>${panel("old")}</div>` +
+  `<div class="col"><div class="cap">Предлагаю</div>${panel("new")}
+   <div class="note"><b>Компьютер:</b> голубая крутилка вращается у карточек "В работе". <b>Телефон:</b> то же кольцо без вращения.
+   Оранжевый "!" заменяет тег "Вопрос к тебе", этап "Нужен ответ" стал оранжевым, "Ждёт приёмки" - сиреневым.</div></div>`;
+</script>
+</body>
+</html>
