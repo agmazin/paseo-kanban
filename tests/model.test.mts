@@ -18,7 +18,7 @@ test("columns follow runtime state first, then labels, then parent check", () =>
   assert.equal(columnOf(sub("a", { labels: { kanban: "queue" } }), chat), "q");
   assert.equal(columnOf(sub("a", { labels: { kanban: "review" } }), { ...chat, status: "running" }), "acc");
   assert.equal(columnOf(sub("a"), { ...chat, status: "running" }), "run");
-  assert.equal(columnOf(sub("a"), chat), "acc");
+  assert.equal(columnOf(sub("a"), chat), "need");
   assert.equal(columnOf(sub("a", { archivedAt: "2026-10-21T11:00:00Z" }), chat), "done");
 });
 
@@ -59,7 +59,7 @@ test("subgroups by sort field, not by the grouping field", () => {
   assert.equal(subgroupField({ ...DEFAULT_PREFS, group: "status", sort: "status" }), null);
   assert.equal(subgroupField({ ...DEFAULT_PREFS, sort: "u" }), null);
   const cards = cardsOf([chat, sub("a"), sub("b", { status: "running" })]);
-  assert.deepEqual(subgroups(cards, "status", DEFAULT_PREFS).map((g) => g.value), ["run", "acc"]);
+  assert.deepEqual(subgroups(cards, "status", DEFAULT_PREFS).map((g) => g.value), ["run", "need"]);
 });
 
 test("panel stage sort: pipeline groups, still cards; old saved sorts fall back to it", async () => {
@@ -74,4 +74,31 @@ test("panel stage sort: pipeline groups, still cards; old saved sorts fall back 
   assert.equal(panelOrder(prefs).sort.sort, "c");
   assert.deepEqual(panelOrder({ ...prefs, chatOrder: "desc" }).groups, ["done", "acc", "need", "run", "q"]);
   assert.equal(DEFAULT_PREFS.chatSort, "stage");
+});
+
+
+test("waiting owner distinguishes explicit human decisions from runtime stops", () => {
+  const cases = [
+    [{ labels: { kanban: "ask" } }, "alexander", "ask"],
+    [{ labels: { kanban: "review" } }, "alexander", "review"],
+    [{ status: "running", pendingPermissions: [{}] }, "alexander", "permission"],
+    [{ status: "error" }, "techlead", "error"],
+    [{ lastError: "Rate limit reached" }, "techlead", "error"],
+    [{ lastError: "Authentication expired" }, "techlead", "error"],
+    [{ providerUnavailable: true }, "techlead", "provider-unavailable"],
+    [{}, "techlead", "unmarked-stop"],
+    [{ status: "running", lastError: "old error" }, null, null],
+    [{ status: "initializing", labels: { kanban: "ask" } }, null, null],
+    [{ archivedAt: "x", status: "error" }, null, null],
+    [{ labels: { kanban: "done" } }, null, null],
+    [{ labels: { kanban: "queue" } }, null, null],
+    [{ labels: { kanban: "accepted" } }, null, null],
+    [{ status: "error", labels: { kanban: "ask" } }, "alexander", "ask"],
+  ] as const;
+  for (const [extra, owner, reason] of cases) {
+    const card = cardsOf([chat, sub("case", extra)])[0];
+    assert.equal(card.waitingFor, owner, JSON.stringify(extra));
+    assert.equal(card.waitReason, reason, JSON.stringify(extra));
+    assert.equal(card.asks, owner === "alexander");
+  }
 });

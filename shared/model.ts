@@ -48,6 +48,8 @@ export interface AgentLike {
   labels?: Readonly<Record<string, string>>;
   requiresAttention?: boolean;
   attentionReason?: string | null;
+  lastError?: string | null;
+  providerUnavailable?: boolean;
   pendingPermissions?: readonly unknown[] | null;
 }
 
@@ -71,8 +73,10 @@ export interface Card {
   created: string;
   updated: string;
   owner: Owner | null;
-  // The executor asked Alexander and waits for his answer ("Вопрос к тебе").
+  // Human decision or permission is pending ("Ждёт тебя").
   asks: boolean;
+  waitingFor: "alexander" | "techlead" | null;
+  waitReason: "permission" | "ask" | "review" | "error" | "provider-unavailable" | "unmarked-stop" | null;
   // Accepted, the owner chat finishes what follows ("Принято, доделываем").
   accepted: boolean;
 }
@@ -107,14 +111,27 @@ export function columnOf(a: AgentLike, parent?: AgentLike | null): Col {
   if (a.archivedAt) return mark === "queue" ? "q" : mark === "review" ? "acc" : mark === ACCEPTED ? "run" : "done";
   if (waitsForAnswer(a)) return "need";
   if (a.status === "running" || a.status === "initializing") return "run";
-  if (a.status === "error" || a.attentionReason === "error" || mark === "ask") return "need";
+  if (mark === "ask") return "need";
+  if (mark === "review") return "acc";
+  if (a.status === "error" || a.attentionReason === "error" || a.lastError?.trim() || a.providerUnavailable) return "need";
   if (mark === "done") return "done";
   if (mark === ACCEPTED) return "run";
   if (mark === "queue") return "q";
-  if (mark === "review") return "acc";
   // Finished executor: the parent chat checks it while its own turn is running.
   if (parent && !parent.archivedAt && parent.status === "running") return "run";
-  return "acc";
+  return "need";
+}
+
+export function waitingOf(a: AgentLike, parent?: AgentLike | null): Pick<Card, "waitingFor" | "waitReason"> {
+  if (a.archivedAt) return { waitingFor: null, waitReason: null };
+  if (waitsForAnswer(a)) return { waitingFor: "alexander", waitReason: "permission" };
+  if (a.status === "running" || a.status === "initializing") return { waitingFor: null, waitReason: null };
+  const mark = a.labels?.[LABEL];
+  if (mark === "ask" || mark === "review") return { waitingFor: "alexander", waitReason: mark };
+  if (a.status === "error" || a.attentionReason === "error" || a.lastError?.trim()) return { waitingFor: "techlead", waitReason: "error" };
+  if (a.providerUnavailable) return { waitingFor: "techlead", waitReason: "provider-unavailable" };
+  if (columnOf(a, parent) === "need") return { waitingFor: "techlead", waitReason: "unmarked-stop" };
+  return { waitingFor: null, waitReason: null };
 }
 
 export function cardsOf(agents: readonly AgentLike[]): Card[] {
@@ -125,6 +142,7 @@ export function cardsOf(agents: readonly AgentLike[]): Card[] {
     if (!parentId || !a.workspaceId) continue;
     const parent = byId.get(parentId) ?? null;
     const key = a.labels?.[KEY_LABEL] || null;
+    const waiting = waitingOf(a, parent);
     cards.push({
       id: a.id,
       workspaceId: a.workspaceId,
@@ -136,7 +154,8 @@ export function cardsOf(agents: readonly AgentLike[]): Card[] {
       executor: modelName(a.provider, a.model),
       created: a.createdAt,
       updated: a.lastActivityAt || a.updatedAt || a.createdAt,
-      asks: !a.archivedAt && a.labels?.[LABEL] === "ask" && a.status !== "running",
+      asks: waiting.waitingFor === "alexander",
+      ...waiting,
       accepted: a.labels?.[LABEL] === ACCEPTED,
       owner: parent
         ? {

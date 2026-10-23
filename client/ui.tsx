@@ -48,6 +48,10 @@ export function palette(theme: Theme) {
     ok: c.accent,
     okFg: c.accentForeground,
     danger: c.statusDanger,
+    askBg: dark ? "rgba(247,121,109,0.16)" : "rgba(241,46,47,0.10)",
+    askFg: dark ? "#f4a59c" : "#c2412f",
+    techleadBg: blend(c.foregroundMuted, c.surface1, dark ? 0.12 : 0.09),
+    techleadFg: c.foregroundMuted,
     // "Принято, доделываем": a calm accent tint from the theme.
     acceptedBg: blend(c.accent, c.surface1, dark ? 0.16 : 0.12),
     acceptedFg: blend(c.accent, c.foreground, dark ? 0.55 : 0.75),
@@ -136,7 +140,8 @@ export function Bang({ p, size = 15 }: { p: Palette; size?: number }) {
   );
 }
 
-export function StatusMark({ col, p }: { col: Col; p: Palette }) {
+export function StatusMark({ col, p, waitingFor }: { col: Col; p: Palette; waitingFor?: Card["waitingFor"] }) {
+  if (waitingFor === "techlead") return <View testID="kanban-techlead-icon"><Icon name="Wrench" size={15} color={p.techleadFg} /></View>;
   if (col === "run") return <Spinner p={p} />;
   if (col === "need") return <Bang p={p} />;
   return <Dot col={col} p={p} />;
@@ -227,7 +232,7 @@ export function CardView({
     <Pressable
       testID={`kanban-card-${card.id}`}
       accessibilityRole="button"
-      accessibilityLabel={`${card.key ? `${card.key} ` : ""}${card.title}. ${STATUS[card.col]}. Открыть диалог исполнителя`}
+      accessibilityLabel={`${card.key ? `${card.key} ` : ""}${card.title}. ${STATUS[card.col]}.${card.waitingFor === "alexander" ? " Ждёт тебя." : card.waitingFor === "techlead" ? " Ждёт техлида." : ""} Открыть диалог исполнителя`}
       onPress={onPress}
       onHoverIn={() => setHover(true)}
       onHoverOut={() => setHover(false)}
@@ -239,14 +244,14 @@ export function CardView({
         </T>
         {showStatus ? (
           <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5 }}>
-            {card.archived ? <Dot col={card.col} p={p} /> : <StatusMark col={card.col} p={p} />}
+            {card.archived ? <Dot col={card.col} p={p} /> : <StatusMark col={card.col} p={p} waitingFor={card.waitingFor} />}
             <T color={p.fg3} size={11.5}>
               {STATUS[card.col]}
             </T>
           </View>
         ) : live ? (
           <View style={{ marginLeft: "auto" }}>
-            <StatusMark col={card.col} p={p} />
+            <StatusMark col={card.col} p={p} waitingFor={card.waitingFor} />
           </View>
         ) : null}
       </View>
@@ -258,6 +263,16 @@ export function CardView({
       <T color={faded ? p.fg3 : p.fg} size={13.5} lines={4}>
         {card.title}
       </T>
+      {card.waitingFor ? (
+        <View
+          testID={card.waitingFor === "alexander" ? "kanban-ask-tag" : "kanban-techlead-tag"}
+          style={{ alignSelf: "flex-start", marginTop: 6, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6, backgroundColor: card.waitingFor === "alexander" ? p.askBg : p.techleadBg }}
+        >
+          <T color={card.waitingFor === "alexander" ? p.askFg : p.techleadFg} size={11.5} weight="500">
+            {card.waitingFor === "alexander" ? "Ждёт тебя" : "Ждёт техлида"}
+          </T>
+        </View>
+      ) : null}
       {card.accepted && !card.archived ? (
         <View
           testID="kanban-accepted-tag"
