@@ -6,6 +6,7 @@ const expect = (locator) => ({
 import { readFile, writeFile } from 'node:fs/promises';
 import { DaemonClient } from '@getpaseo/client/internal/daemon-client';
 import { chromium } from '/Users/agmazin/Library/Developer/paseo-dialogs/node_modules/playwright/index.mjs';
+const version = process.env.KANBAN_TEST_VERSION || '0.3.6';
 const home = '/Users/agmazin/Library/Developer/paseo-kanban/test-home';
 const client = new DaemonClient({ url: 'ws://127.0.0.1:6786/ws', clientId: 'kanban-priority', clientType: 'cli', localCredential: async () => (await readFile(`${home}/local-credential`, 'utf8')).trim(), reconnect: { enabled: false } });
 await client.connect();
@@ -25,7 +26,18 @@ const cards = response.cards.filter(c => c.owner?.id === parent.id);
 assert.equal(cards.length, 3);
 assert.equal(cards.filter(c => c.waitingFor === 'alexander').length, 2);
 assert.equal(cards.filter(c => c.waitingFor === 'techlead').length, 1);
-await writeFile('docs/verification/priority-0.3.6-rpc.json', JSON.stringify(cards, null, 2));
+await writeFile(`docs/verification/priority-${version}-rpc.json`, JSON.stringify(cards, null, 2));
+const geometry = [];
+async function checkHeader(page, card, context) {
+  const header = page.getByTestId(`kanban-card-header-${card.id}`);
+  const flag = await header.getByTestId(`kanban-priority-${card.id}`).boundingBox();
+  const status = await header.getByTestId(card.waitingFor === 'techlead' ? 'kanban-techlead-icon' : 'kanban-bang').boundingBox();
+  const row = await header.boundingBox();
+  assert.ok(Math.abs(flag.y + flag.height / 2 - status.y - status.height / 2) <= 1, `${context}: flag and status centered`);
+  assert.ok(flag.x + flag.width <= status.x, `${context}: flag precedes status`);
+  assert.equal(row.height, 24, `${context}: original 8 + 16 header height`);
+  geometry.push({ context, row, flag, status });
+}
 const browser = await chromium.launch({ executablePath: '/Users/agmazin/Library/Caches/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-mac-arm64/chrome-headless-shell' });
 try {
   for (const [width, scheme] of [[1440, 'dark'], [390, 'dark'], [1440, 'light']]) {
@@ -62,7 +74,9 @@ try {
     await page.waitForTimeout(700);
     const latest = await client.invokePluginRpc('paseo-kanban', 'kanban.cards', { archived: true });
     assert.equal(latest.cards.find(c => c.id === card.id).priority, 'high');
-    await page.screenshot({ path: `docs/verification/priority-0.3.6-${width}${scheme === "light" ? "-light" : ""}.png` });
+    await checkHeader(page, card, `chat-${width}-${scheme}`);
+    await checkHeader(page, cards.find(c => c.waitingFor === 'techlead'), `chat-key-${width}-${scheme}`);
+    await page.screenshot({ path: `docs/verification/priority-${version}-${width}${scheme === "light" ? "-light" : ""}.png` });
     assert.deepEqual(errors, []);
     console.log(width, scheme, 'OK priority UI and RPC');
     const boardPage = await browser.newPage({ viewport: { width, height: 900 }, colorScheme: scheme, locale: 'ru-RU' });
@@ -80,8 +94,10 @@ try {
     assert.equal(await boardPage.getByTestId(`kanban-card-${card.id}`).count(), 1);
     if (width === 390) await boardPage.getByTestId('kanban-cols').evaluate(n => { n.scrollLeft = 596; });
     await boardPage.waitForTimeout(500);
-    await boardPage.screenshot({ path: `docs/verification/priority-0.3.6-board-${width}${scheme === "light" ? "-light" : ""}.png` });
+    await checkHeader(boardPage, card, `board-${width}-${scheme}`);
+    await boardPage.screenshot({ path: `docs/verification/priority-${version}-board-${width}${scheme === "light" ? "-light" : ""}.png` });
     await boardPage.close();
     await page.close();
   }
+  await writeFile(`docs/verification/priority-${version}-geometry.json`, JSON.stringify(geometry, null, 2));
 } finally { await browser.close(); await client.close(); }

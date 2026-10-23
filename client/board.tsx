@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, TextInput, View } from "react-native";
+import { Icon } from "@getpaseo/plugin/client/react-native";
 import { usePaseo, useRpc, useWorkspace, type PluginAgentPanelProps, type PluginScreenProps, type PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
 import { lastBoardWorkspace, rememberWorkspace } from "./focus";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -52,13 +53,13 @@ function DetailedCard({
       {...props}
       details={prefs.details ? reply.data?.text || null : null}
       executor={prefs.executor}
-      priorityControl={<PriorityControl agentId={props.card.id} priority={props.card.priority} hostId={props.hostId} p={props.p} />}
+      priorityControl={<PriorityControl compact agentId={props.card.id} priority={props.card.priority} hostId={props.hostId} p={props.p} />}
       actions={actions ? <AcceptActions card={props.card} hostId={props.hostId} p={props.p} /> : null}
     />
   );
 }
 
-function PriorityControl({ agentId, priority, hostId, p }: { agentId: string; priority: Priority; hostId: string; p: Palette }) {
+function PriorityControl({ agentId, priority, hostId, p, compact = false }: { compact?: boolean; agentId: string; priority: Priority; hostId: string; p: Palette }) {
   const save = useRpc(setPriority);
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
@@ -80,8 +81,8 @@ function PriorityControl({ agentId, priority, hostId, p }: { agentId: string; pr
   const color = priority === "high" ? (p.dark ? "#df7773" : "#c94f49") : priority === "low" ? (p.dark ? "#79b3db" : "#438fc4") : p.fg3;
   return (
     <View style={{ zIndex: open ? 50 : 1 }}>
-      <Pressable testID={`kanban-priority-${agentId}`} accessibilityRole="button" accessibilityLabel={`Приоритет: ${PRIORITIES.find(([v]) => v === priority)?.[1] ?? "Обычный"}`} onPress={() => setOpen(!open)} style={{ width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
-        <T color={color} size={priority === "normal" ? 18 : 20}>{priority === "normal" ? "⋯" : "⚑"}</T>
+      <Pressable testID={`kanban-priority-${agentId}`} accessibilityRole="button" accessibilityLabel={`Приоритет: ${PRIORITIES.find(([v]) => v === priority)?.[1] ?? "Обычный"}`} onPress={() => setOpen(!open)} style={{ width: compact ? 20 : 28, height: compact ? 16 : 28, alignItems: "center", justifyContent: "center" }}>
+        <Icon name={priority === "normal" ? "Ellipsis" : "Flag"} color={color} size={compact ? 14 : 17} />
       </Pressable>
       {open ? <MenuBox p={p} style={{ position: "relative", top: 0, right: 0, width: 175 }}>
         <T color={p.fg2} size={12} style={{ padding: 8 }}>Приоритет</T>

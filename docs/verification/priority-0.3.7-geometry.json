@@ -1,0 +1,191 @@
+[
+  {
+    "context": "chat-1440-dark",
+    "row": {
+      "x": 1135,
+      "y": 165,
+      "width": 290,
+      "height": 24
+    },
+    "flag": {
+      "x": 1374,
+      "y": 173,
+      "width": 20,
+      "height": 16
+    },
+    "status": {
+      "x": 1399,
+      "y": 173.5,
+      "width": 15,
+      "height": 15
+    }
+  },
+  {
+    "context": "chat-key-1440-dark",
+    "row": {
+      "x": 1135,
+      "y": 291,
+      "width": 290,
+      "height": 24
+    },
+    "flag": {
+      "x": 1374,
+      "y": 299,
+      "width": 20,
+      "height": 16
+    },
+    "status": {
+      "x": 1399,
+      "y": 299.5,
+      "width": 15,
+      "height": 15
+    }
+  },
+  {
+    "context": "board-1440-dark",
+    "row": {
+      "x": 939,
+      "y": 199,
+      "width": 276,
+      "height": 24
+    },
+    "flag": {
+      "x": 1164,
+      "y": 207,
+      "width": 20,
+      "height": 16
+    },
+    "status": {
+      "x": 1189,
+      "y": 207.5,
+      "width": 15,
+      "height": 15
+    }
+  },
+  {
+    "context": "chat-390-dark",
+    "row": {
+      "x": 13,
+      "y": 359,
+      "width": 364,
+      "height": 24
+    },
+    "flag": {
+      "x": 326,
+      "y": 367,
+      "width": 20,
+      "height": 16
+    },
+    "status": {
+      "x": 351,
+      "y": 367.5,
+      "width": 15,
+      "height": 15
+    }
+  },
+  {
+    "context": "chat-key-390-dark",
+    "row": {
+      "x": 13,
+      "y": 485,
+      "width": 364,
+      "height": 24
+    },
+    "flag": {
+      "x": 326,
+      "y": 493,
+      "width": 20,
+      "height": 16
+    },
+    "status": {
+      "x": 351,
+      "y": 493.5,
+      "width": 15,
+      "height": 15
+    }
+  },
+  {
+    "context": "board-390-dark",
+    "row": {
+      "x": 23,
+      "y": 227,
+      "width": 276,
+      "height": 24
+    },
+    "flag": {
+      "x": 248,
+      "y": 235,
+      "width": 20,
+      "height": 16
+    },
+    "status": {
+      "x": 273,
+      "y": 235.5,
+      "width": 15,
+      "height": 15
+    }
+  },
+  {
+    "context": "chat-1440-light",
+    "row": {
+      "x": 1135,
+      "y": 165,
+      "width": 290,
+      "height": 24
+    },
+    "flag": {
+      "x": 1374,
+      "y": 173,
+      "width": 20,
+      "height": 16
+    },
+    "status": {
+      "x": 1399,
+      "y": 173.5,
+      "width": 15,
+      "height": 15
+    }
+  },
+  {
+    "context": "chat-key-1440-light",
+    "row": {
+      "x": 1135,
+      "y": 291,
+      "width": 290,
+      "height": 24
+    },
+    "flag": {
+      "x": 1374,
+      "y": 299,
+      "width": 20,
+      "height": 16
+    },
+    "status": {
+      "x": 1399,
+      "y": 299.5,
+      "width": 15,
+      "height": 15
+    }
+  },
+  {
+    "context": "board-1440-light",
+    "row": {
+      "x": 939,
+      "y": 199,
+      "width": 276,
+      "height": 24
+    },
+    "flag": {
+      "x": 1164,
+      "y": 207,
+      "width": 20,
+      "height": 16
+    },
+    "status": {
+      "x": 1189,
+      "y": 207.5,
+      "width": 15,
+      "height": 15
+    }
+  }
+]

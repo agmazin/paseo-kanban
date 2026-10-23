@@ -231,7 +231,18 @@ export function CardView({
         marginBottom: 6,
       }}
     >
-    {priorityControl ? <View style={{ flexDirection: "row", alignItems: "flex-start", paddingLeft: 11, paddingRight: 5, paddingTop: 3 }}><T color={p.fg3} size={11.5} style={{ flex: 1, paddingTop: 5 }}>{shortDate(card.updated)}</T>{priorityControl}</View> : null}
+    <View testID={`kanban-card-header-${card.id}`} style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 8, paddingHorizontal: 11, marginBottom: 3, minHeight: 24 }}>
+      <T color={p.fg3} size={11.5}>{shortDate(card.updated)}</T>
+      <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5 }}>
+        {priorityControl}
+        {showStatus ? (
+          <>
+            {card.archived ? <Dot col={card.col} p={p} /> : <StatusMark col={card.col} p={p} waitingFor={card.waitingFor} />}
+            <T color={p.fg3} size={11.5}>{STATUS[card.col]}</T>
+          </>
+        ) : live ? <StatusMark col={card.col} p={p} waitingFor={card.waitingFor} /> : null}
+      </View>
+    </View>
     <Pressable
       testID={`kanban-card-${card.id}`}
       accessibilityRole="button"
@@ -239,23 +250,8 @@ export function CardView({
       onPress={onPress}
       onHoverIn={() => setHover(true)}
       onHoverOut={() => setHover(false)}
-      style={{ paddingTop: 8, paddingBottom: actions ? 0 : 9, paddingHorizontal: 11 }}
+      style={{ paddingTop: 0, paddingBottom: actions ? 0 : 9, paddingHorizontal: 11 }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3, minHeight: priorityControl && !showStatus && !live ? 0 : 16 }}>
-        {priorityControl ? null : <T color={p.fg3} size={11.5}>{shortDate(card.updated)}</T>}
-        {showStatus ? (
-          <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5 }}>
-            {card.archived ? <Dot col={card.col} p={p} /> : <StatusMark col={card.col} p={p} waitingFor={card.waitingFor} />}
-            <T color={p.fg3} size={11.5}>
-              {STATUS[card.col]}
-            </T>
-          </View>
-        ) : live ? (
-          <View style={{ marginLeft: "auto" }}>
-            <StatusMark col={card.col} p={p} waitingFor={card.waitingFor} />
-          </View>
-        ) : null}
-      </View>
       {card.key ? (
         <T color={p.fg3} size={11.5} style={{ marginBottom: 2 }}>
           {card.key}
