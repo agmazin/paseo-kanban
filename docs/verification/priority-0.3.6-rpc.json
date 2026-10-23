@@ -1,0 +1,74 @@
+[
+  {
+    "id": "aaaa10df-5e3f-4114-8a38-50b8fd8210d0",
+    "workspaceId": "wks_0722ef6755f76bff",
+    "key": "CTG-28-2",
+    "title": "Оценить дизайн",
+    "priority": "normal",
+    "col": "acc",
+    "archived": false,
+    "provider": "claude",
+    "executor": "Haiku 5.5",
+    "created": "2026-10-23T14:40:54.517Z",
+    "updated": "2026-10-23T18:11:05.500Z",
+    "owner": {
+      "id": "8ed06c18-e6cd-437e-b7b4-f23f7ebfa772",
+      "title": "CTG-28: Ожидание 0.3.5",
+      "provider": "claude",
+      "priority": "high",
+      "archived": false
+    },
+    "asks": true,
+    "waitingFor": "alexander",
+    "waitReason": "review",
+    "accepted": false
+  },
+  {
+    "id": "d271393d-1ec7-408e-a7ea-45de32a0cf12",
+    "workspaceId": "wks_0722ef6755f76bff",
+    "key": "CTG-28-3",
+    "title": "Ход остановился",
+    "priority": "low",
+    "col": "need",
+    "archived": false,
+    "provider": "claude",
+    "executor": "Haiku 5.5",
+    "created": "2026-10-23T14:40:54.560Z",
+    "updated": "2026-10-23T18:11:05.234Z",
+    "owner": {
+      "id": "8ed06c18-e6cd-437e-b7b4-f23f7ebfa772",
+      "title": "CTG-28: Ожидание 0.3.5",
+      "provider": "claude",
+      "priority": "high",
+      "archived": false
+    },
+    "asks": false,
+    "waitingFor": "techlead",
+    "waitReason": "unmarked-stop",
+    "accepted": false
+  },
+  {
+    "id": "52bf64dc-6972-4de9-b191-4b823dd84e8d",
+    "workspaceId": "wks_0722ef6755f76bff",
+    "key": "CTG-28-1",
+    "title": "Выбрать вариант",
+    "priority": "high",
+    "col": "need",
+    "archived": false,
+    "provider": "claude",
+    "executor": "Haiku 5.5",
+    "created": "2026-10-23T14:40:54.470Z",
+    "updated": "2026-10-23T18:11:04.984Z",
+    "owner": {
+      "id": "8ed06c18-e6cd-437e-b7b4-f23f7ebfa772",
+      "title": "CTG-28: Ожидание 0.3.5",
+      "provider": "claude",
+      "priority": "high",
+      "archived": false
+    },
+    "asks": true,
+    "waitingFor": "alexander",
+    "waitReason": "ask",
+    "accepted": false
+  }
+]

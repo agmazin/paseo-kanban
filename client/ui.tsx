@@ -204,9 +204,11 @@ export function CardView({
   executor = true,
   actions,
   onPress,
+  priorityControl,
   p,
 }: {
   card: Card;
+  priorityControl?: ReactNode;
   inChat: boolean;
   showStatus: boolean;
   details?: string | null;
@@ -229,6 +231,7 @@ export function CardView({
         marginBottom: 6,
       }}
     >
+    {priorityControl ? <View style={{ flexDirection: "row", alignItems: "flex-start", paddingLeft: 11, paddingRight: 5, paddingTop: 3 }}><T color={p.fg3} size={11.5} style={{ flex: 1, paddingTop: 5 }}>{shortDate(card.updated)}</T>{priorityControl}</View> : null}
     <Pressable
       testID={`kanban-card-${card.id}`}
       accessibilityRole="button"
@@ -238,10 +241,8 @@ export function CardView({
       onHoverOut={() => setHover(false)}
       style={{ paddingTop: 8, paddingBottom: actions ? 0 : 9, paddingHorizontal: 11 }}
     >
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3, minHeight: 16 }}>
-        <T color={p.fg3} size={11.5}>
-          {shortDate(card.updated)}
-        </T>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 3, minHeight: priorityControl && !showStatus && !live ? 0 : 16 }}>
+        {priorityControl ? null : <T color={p.fg3} size={11.5}>{shortDate(card.updated)}</T>}
         {showStatus ? (
           <View style={{ marginLeft: "auto", flexDirection: "row", alignItems: "center", gap: 5 }}>
             {card.archived ? <Dot col={card.col} p={p} /> : <StatusMark col={card.col} p={p} waitingFor={card.waitingFor} />}
@@ -290,6 +291,7 @@ export function CardView({
       ) : null}
       {!inChat && card.owner ? (
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 7 }}>
+          {card.owner.priority !== "normal" ? <T color={card.owner.priority === "high" ? "#df7773" : "#79b3db"} size={15}>⚑</T> : null}
           <Logo provider={card.owner.provider} size={14} color={p.ownLogo} />
           <T color={faded ? p.fg3 : p.own} size={12.5} weight="500" style={{ flexShrink: 1 }}>
             {card.owner.title}

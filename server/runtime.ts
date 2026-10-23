@@ -7,10 +7,10 @@ import { join } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
-import { accept, lastReply, prefsSchema, readCards, readPrefs, sanitizePrefs, savePrefs, sendBack } from "../shared/contracts";
+import { accept, lastReply, prefsSchema, readCards, readPrefs, sanitizePrefs, savePrefs, sendBack, setPriority } from "../shared/contracts";
 import { EMPTY_KEYS, type KeyChange, type KeysState } from "../shared/keys";
 import { keysReconciler } from "./keys";
-import { ACCEPTED, cardsOf, clearedOnTurn, DEFAULT_PREFS, LABEL, NEUTRAL, parentOf, providerOf, type AgentLike, type Prefs } from "../shared/model";
+import { ACCEPTED, cardsOf, clearedOnTurn, DEFAULT_PREFS, LABEL, NEUTRAL, PRIORITY_LABEL, priorityOf, parentOf, providerOf, type AgentLike, type Prefs } from "../shared/model";
 
 const home = process.env.PASEO_HOME || join(homedir(), ".paseo");
 const directory = join(home, "plugin-data", "paseo-kanban");
@@ -152,12 +152,18 @@ export function register(server: PluginServerContext) {
     console.log("Канбан: карточка возвращена в работу");
     return {};
   });
+  server.handle(setPriority, async ({ agentId, priority }, { paseo }) => {
+    const result = await paseo.agents.ref(agentId).refresh();
+    if (!result) throw new Error("Чат или карточка не найдены");
+    await run(bin, ["agent", "update", agentId, "--label", `${PRIORITY_LABEL}=${priority}`, "--json", "--home", home], { timeout: 10_000 });
+    return {};
+  });
   server.handle(readCards, async ({ archived }, { paseo }) => {
     if (!numbers.paseo()) renumber(paseo, 0);
     const agents = await listAgents(paseo, archived);
     const chats = agents
       .filter((a) => !parentOf(a) && !a.archivedAt && a.workspaceId)
-      .map((a) => ({ id: a.id, title: a.title?.trim() || "Без названия", provider: providerOf(a.provider), workspaceId: a.workspaceId as string }));
+      .map((a) => ({ id: a.id, title: a.title?.trim() || "Без названия", provider: providerOf(a.provider), priority: priorityOf(a), workspaceId: a.workspaceId as string }));
     return { cards: cardsOf(agents), chats };
   });
   server.handle(lastReply, async ({ agentId }, { paseo }) => {

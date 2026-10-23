@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { cardsOf, columnOf, columns, DEFAULT_PREFS, modelName, subgroupField, subgroups } from "../shared/model.ts";
+import { cardsOf, columnOf, columns, DEFAULT_PREFS, modelName, subgroupField, subgroups, priorityOf, sortCards } from "../shared/model.ts";
 
 const base = { provider: "claude", status: "idle", createdAt: "2026-10-21T10:00:00Z", lastActivityAt: "2026-10-21T10:05:00Z", workspaceId: "w1" };
 const chat = { ...base, id: "chat", title: "Тендер" };
@@ -101,4 +101,14 @@ test("waiting owner distinguishes explicit human decisions from runtime stops", 
     assert.equal(card.waitReason, reason, JSON.stringify(extra));
     assert.equal(card.asks, owner === "alexander");
   }
+});
+
+test("priority defaults, owner propagation and stable ordering independent of direction", () => {
+  assert.equal(priorityOf({}), "normal");
+  assert.equal(priorityOf({ labels: { "kanban.priority": "invalid" } }), "normal");
+  const agents = [chat, sub("low", { labels: { "kanban.priority": "low" } }), sub("normal"), sub("high1", { labels: { "kanban.priority": "high" } }), sub("high2", { labels: { "kanban.priority": "high" } })];
+  const cards = cardsOf(agents);
+  for (const order of ["asc", "desc"] as const) assert.deepEqual(sortCards(cards, { ...DEFAULT_PREFS, order }).map(c => c.id), ["high1", "high2", "normal", "low"]);
+  assert.equal(cards[0].owner?.priority, "normal");
+  assert.deepEqual(subgroups(cards, "chat", DEFAULT_PREFS).flatMap(g => g.cards).map(c => c.id), ["high1", "high2", "normal", "low"]);
 });

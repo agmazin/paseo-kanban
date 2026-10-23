@@ -15,6 +15,13 @@ export const PANEL_SORTS: readonly [Prefs["chatSort"], string][] = [
 export const STATUS: Record<Col, string> = Object.fromEntries(COLS) as Record<Col, string>;
 // Label an agent or orchestrator sets with `paseo agent update <id> --label kanban=<value>`.
 export const LABEL = "kanban";
+export const PRIORITY_LABEL = "kanban.priority";
+export type Priority = "high" | "normal" | "low";
+export function priorityOf(a: Pick<AgentLike, "labels">): Priority {
+  const value = a.labels?.[PRIORITY_LABEL];
+  return value === "high" || value === "low" ? value : "normal";
+}
+export const PRIORITIES: readonly [Priority, string][] = [["high", "Высокий"], ["normal", "Обычный"], ["low", "Низкий"]];
 export const MARKS = ["queue", "review", "done", "ask"] as const;
 // "Принять": the result suits Alexander, the owner chat does what follows and then sets done.
 // A new executor turn keeps this mark (the chat may send the executor more work).
@@ -57,6 +64,7 @@ export interface Owner {
   id: string;
   title: string;
   provider: string;
+  priority: Priority;
   archived: boolean;
 }
 
@@ -67,6 +75,7 @@ export interface Card {
   key: string | null;
   title: string;
   col: Col;
+  priority: Priority;
   archived: boolean;
   provider: string;
   executor: string;
@@ -149,6 +158,7 @@ export function cardsOf(agents: readonly AgentLike[]): Card[] {
       key,
       title: splitTitle(a.title?.trim() || "", key).name || "Без названия",
       col: columnOf(a, parent),
+      priority: priorityOf(a),
       archived: !!a.archivedAt,
       provider: providerOf(a.provider),
       executor: modelName(a.provider, a.model),
@@ -163,6 +173,7 @@ export function cardsOf(agents: readonly AgentLike[]): Card[] {
             title: parent.title?.trim() || "Без названия",
             provider: providerOf(parent.provider),
             archived: !!parent.archivedAt,
+            priority: priorityOf(parent),
           }
         : null,
     });
@@ -254,7 +265,10 @@ export function panelOrder(prefs: Prefs) {
 
 export function sortCards(list: readonly Card[], prefs: Prefs) {
   const dir = prefs.order === "asc" ? 1 : -1;
+  const rank = { high: 0, normal: 1, low: 2 };
   return [...list].sort((a, b) => {
+    const priority = rank[a.priority ?? "normal"] - rank[b.priority ?? "normal"];
+    if (priority) return priority;
     if (prefs.sort === "t") return a.title.localeCompare(b.title, "ru") * dir;
     const key = prefs.sort === "c" ? "created" : "updated";
     // Ascending dates mean the newest first, as in the approved mockup.
@@ -278,6 +292,9 @@ export interface Subgroup {
 }
 
 export function subgroups(list: readonly Card[], field: "chat" | "exec" | "status", prefs: Prefs): Subgroup[] {
+  if (field !== "status" && new Set(list.map(c => c.priority)).size > 1) {
+    return PRIORITIES.flatMap(([priority]) => subgroups(list.filter(c => c.priority === priority), field, prefs).map(g => ({ ...g, key: `${priority}|${g.key}` })));
+  }
   const values =
     field === "status"
       ? COLS.map(([k]) => k as string)

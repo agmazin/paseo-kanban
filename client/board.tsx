@@ -3,9 +3,11 @@ import { Pressable, ScrollView, TextInput, View } from "react-native";
 import { usePaseo, useRpc, useWorkspace, type PluginAgentPanelProps, type PluginScreenProps, type PluginWorkspacePanelProps } from "@getpaseo/plugin/client";
 import { lastBoardWorkspace, rememberWorkspace } from "./focus";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { accept, lastReply, sendBack } from "../shared/contracts";
+import { accept, lastReply, sendBack, setPriority } from "../shared/contracts";
 import {
   GROUPS,
+  PRIORITIES,
+  type Priority,
   PANEL_SORTS,
   SORTS,
   STATUS,
@@ -50,8 +52,43 @@ function DetailedCard({
       {...props}
       details={prefs.details ? reply.data?.text || null : null}
       executor={prefs.executor}
+      priorityControl={<PriorityControl agentId={props.card.id} priority={props.card.priority} hostId={props.hostId} p={props.p} />}
       actions={actions ? <AcceptActions card={props.card} hostId={props.hostId} p={props.p} /> : null}
     />
+  );
+}
+
+function PriorityControl({ agentId, priority, hostId, p }: { agentId: string; priority: Priority; hostId: string; p: Palette }) {
+  const save = useRpc(setPriority);
+  const qc = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const choose = async (value: Priority) => {
+    setBusy(true);
+    setError("");
+    try {
+      await save({ agentId, priority: value });
+      await qc.invalidateQueries({ queryKey: ["kanban-cards", hostId] });
+      setOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Не получилось");
+    } finally {
+      setBusy(false);
+    }
+  };
+  const color = priority === "high" ? (p.dark ? "#df7773" : "#c94f49") : priority === "low" ? (p.dark ? "#79b3db" : "#438fc4") : p.fg3;
+  return (
+    <View style={{ zIndex: open ? 50 : 1 }}>
+      <Pressable testID={`kanban-priority-${agentId}`} accessibilityRole="button" accessibilityLabel={`Приоритет: ${PRIORITIES.find(([v]) => v === priority)?.[1] ?? "Обычный"}`} onPress={() => setOpen(!open)} style={{ width: 28, height: 28, alignItems: "center", justifyContent: "center" }}>
+        <T color={color} size={priority === "normal" ? 18 : 20}>{priority === "normal" ? "⋯" : "⚑"}</T>
+      </Pressable>
+      {open ? <MenuBox p={p} style={{ position: "relative", top: 0, right: 0, width: 175 }}>
+        <T color={p.fg2} size={12} style={{ padding: 8 }}>Приоритет</T>
+        {PRIORITIES.map(([value, label]) => <MenuItem key={value} label={label} selected={priority === value} onPress={() => { if (!busy) void choose(value); }} p={p} />)}
+        {error ? <T color={p.danger} size={12} lines={3}>{error}</T> : null}
+      </MenuBox> : null}
+    </View>
   );
 }
 
@@ -189,7 +226,7 @@ function ColumnBody({
     <>
       {sub
         ? subgroups(col.cards, sub, prefs).map((g) => {
-            const key = `${col.key}|${g.value}`;
+            const key = `${col.key}|${g.key}`;
             const isOpen = !prefs.toggled[key];
             return (
               <View key={key}>
@@ -471,13 +508,14 @@ export function ChatView({
   return (
     <View style={sheet ? undefined : { flex: 1 }}>
       {sheet ? (
-        <View style={{ position: "absolute", top: -3, right: 0, zIndex: 10 }}>{more}</View>
+        <View style={{ flexDirection: "row", justifyContent: "flex-end", zIndex: 10 }}>{chat ? <PriorityControl agentId={chat.id} priority={chat.priority} hostId={host.id} p={p} /> : null}{more}</View>
       ) : (
         <View style={{ flexDirection: "row", alignItems: "center", paddingLeft: 16, paddingRight: 10, paddingTop: 8 }}>
           <T color={p.fg3} size={12} style={{ flexShrink: 1 }}>
             {chat ? `Чат ${chat.title || "без названия"}` : "Выберите вкладку чата"}
           </T>
           <View style={{ flex: 1 }} />
+          {chat ? <PriorityControl agentId={chat.id} priority={chat.priority} hostId={host.id} p={p} /> : null}
           {more}
         </View>
       )}

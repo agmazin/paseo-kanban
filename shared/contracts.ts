@@ -53,24 +53,32 @@ export const lastReply = defineRpc({
   output: z.object({ text: z.string() }),
 });
 
+export const prioritySchema = z.enum(["high", "normal", "low"]);
+export const setPriority = defineRpc({
+  name: "kanban.set-priority",
+  input: z.object({ agentId: z.string().min(1), priority: prioritySchema }),
+  output: z.object({}),
+});
+
 const cardSchema = z.object({
   id: z.string(),
   workspaceId: z.string(),
   key: z.string().nullable(),
   title: z.string(),
+  priority: prioritySchema,
   col: z.enum(["q", "run", "need", "acc", "done"]),
   archived: z.boolean(),
   provider: z.string(),
   executor: z.string(),
   created: z.string(),
   updated: z.string(),
-  owner: z.object({ id: z.string(), title: z.string(), provider: z.string(), archived: z.boolean() }).nullable(),
+  owner: z.object({ id: z.string(), title: z.string(), provider: z.string(), priority: prioritySchema, archived: z.boolean() }).nullable(),
   asks: z.boolean(),
   waitingFor: z.enum(["alexander", "techlead"]).nullable(),
   waitReason: z.enum(["permission", "ask", "review", "error", "provider-unavailable", "unmarked-stop"]).nullable(),
   accepted: z.boolean(),
 });
-const chatSchema = z.object({ id: z.string(), title: z.string(), provider: z.string(), workspaceId: z.string() });
+const chatSchema = z.object({ id: z.string(), title: z.string(), provider: z.string(), workspaceId: z.string(), priority: prioritySchema });
 
 // Cards are built on the daemon machine: the phone gets a few KB instead of every agent snapshot.
 export const readCards = defineRpc({
